@@ -166,7 +166,7 @@ impl From<KeySignatureError> for EventVerificationError {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
+    use anyhow::{Context, Result};
     use ed25519_dalek::Signer as _;
 
     use crate::{
@@ -175,8 +175,8 @@ mod tests {
         SignedOrdinaryEvent, apply_ordinary_event, derive_event_signature_target,
         derive_identity_id, derive_inception_signature_target, derive_next_key_commitment,
         testing::{
-            control_key, genesis_state, invalid_ed25519_public_key_bytes, keyset, ordinary_event,
-            sign, signing_key,
+            control_key, dummy_keyset, genesis_state, invalid_ed25519_public_key_bytes,
+            ordinary_event, sign, signing_key,
         },
     };
 
@@ -231,7 +231,7 @@ mod tests {
     fn verifies_one_of_one_signed_inception() -> Result<()> {
         let signer = signing_key(0x11);
         let control = KeySet::new(1, vec![control_key(&signer)])?;
-        let commitment = derive_next_key_commitment(&keyset(1, &[0x22])?)?;
+        let commitment = derive_next_key_commitment(&dummy_keyset(1, &[0x22])?)?;
         let inception = Inception::new(control, commitment);
         let target = derive_inception_signature_target(&inception)?;
         let signed = SignedInception::new(inception, vec![sign(0, &signer, target.as_bytes())])?;
@@ -256,7 +256,7 @@ mod tests {
                 control_key(&third),
             ],
         )?;
-        let commitment = derive_next_key_commitment(&keyset(1, &[0x44])?)?;
+        let commitment = derive_next_key_commitment(&dummy_keyset(1, &[0x44])?)?;
         let inception = Inception::new(control, commitment);
         let target = derive_inception_signature_target(&inception)?;
         let signed = SignedInception::new(
@@ -277,7 +277,7 @@ mod tests {
         let first = signing_key(0x11);
         let second = signing_key(0x22);
         let control = KeySet::new(1, vec![control_key(&first), control_key(&second)])?;
-        let commitment = derive_next_key_commitment(&keyset(1, &[0x33])?)?;
+        let commitment = derive_next_key_commitment(&dummy_keyset(1, &[0x33])?)?;
         let inception = Inception::new(control, commitment);
         let target = derive_inception_signature_target(&inception)?;
         let signed = SignedInception::new(inception, vec![sign(1, &first, target.as_bytes())])?;
@@ -298,10 +298,13 @@ mod tests {
         let control = KeySet::new(1, vec![control_key(&signer)])?;
         let original = Inception::new(
             control.clone(),
-            derive_next_key_commitment(&keyset(1, &[0x22])?)?,
+            derive_next_key_commitment(&dummy_keyset(1, &[0x22])?)?,
         );
         let original_target = derive_inception_signature_target(&original)?;
-        let tampered = Inception::new(control, derive_next_key_commitment(&keyset(1, &[0x23])?)?);
+        let tampered = Inception::new(
+            control,
+            derive_next_key_commitment(&dummy_keyset(1, &[0x23])?)?,
+        );
         let signed =
             SignedInception::new(tampered, vec![sign(0, &signer, original_target.as_bytes())])?;
 
@@ -320,7 +323,7 @@ mod tests {
         let first = signing_key(0x11);
         let second = signing_key(0x22);
         let control = KeySet::new(1, vec![control_key(&first), control_key(&second)])?;
-        let commitment = derive_next_key_commitment(&keyset(1, &[0x33])?)?;
+        let commitment = derive_next_key_commitment(&dummy_keyset(1, &[0x33])?)?;
         let inception = Inception::new(control, commitment);
         let target = derive_inception_signature_target(&inception)?;
         let signed = SignedInception::new(
@@ -345,7 +348,7 @@ mod tests {
     fn verification_rejects_invalid_public_key_bytes() -> Result<()> {
         let invalid_key = invalid_ed25519_public_key_bytes()?;
         let control = KeySet::new(1, vec![PublicKey::from_ed25519_bytes(invalid_key)])?;
-        let commitment = derive_next_key_commitment(&keyset(1, &[0x22])?)?;
+        let commitment = derive_next_key_commitment(&dummy_keyset(1, &[0x22])?)?;
         let inception = Inception::new(control, commitment);
         let signed = SignedInception::new(
             inception,
@@ -369,7 +372,7 @@ mod tests {
     fn verifies_signed_inception_with_a_p256_control_key() -> Result<()> {
         let signer = p256_signing_key(0x11);
         let control = KeySet::new(1, vec![p256_control_key(&signer)])?;
-        let commitment = derive_next_key_commitment(&keyset(1, &[0x22])?)?;
+        let commitment = derive_next_key_commitment(&dummy_keyset(1, &[0x22])?)?;
         let inception = Inception::new(control, commitment);
         let target = derive_inception_signature_target(&inception)?;
         let signed =
@@ -390,7 +393,7 @@ mod tests {
             2,
             vec![control_key(&ed25519_signer), p256_control_key(&p256_signer)],
         )?;
-        let commitment = derive_next_key_commitment(&keyset(1, &[0x33])?)?;
+        let commitment = derive_next_key_commitment(&dummy_keyset(1, &[0x33])?)?;
         let inception = Inception::new(control, commitment);
         let target = derive_inception_signature_target(&inception)?;
         let signed = SignedInception::new(
@@ -410,7 +413,7 @@ mod tests {
     fn verification_rejects_high_s_p256_signature() -> Result<()> {
         let signer = p256_signing_key(0x11);
         let control = KeySet::new(1, vec![p256_control_key(&signer)])?;
-        let commitment = derive_next_key_commitment(&keyset(1, &[0x22])?)?;
+        let commitment = derive_next_key_commitment(&dummy_keyset(1, &[0x22])?)?;
         let inception = Inception::new(control, commitment);
         let target = derive_inception_signature_target(&inception)?;
         let signature: p256::ecdsa::Signature = signer.sign(target.as_bytes());
@@ -446,7 +449,7 @@ mod tests {
     fn verification_rejects_p256_key_paired_with_ed25519_signature() -> Result<()> {
         let signer = p256_signing_key(0x11);
         let control = KeySet::new(1, vec![p256_control_key(&signer)])?;
-        let commitment = derive_next_key_commitment(&keyset(1, &[0x22])?)?;
+        let commitment = derive_next_key_commitment(&dummy_keyset(1, &[0x22])?)?;
         let inception = Inception::new(control, commitment);
         let signed = SignedInception::new(
             inception,
@@ -471,7 +474,10 @@ mod tests {
         let (signer, state) = genesis_state(0x11)?;
         let signed = ordinary_event(&state, IdentityAction::deactivate(), &signer)?;
 
-        verify_signed_ordinary_event(&state, signed.as_ordinary().unwrap())?;
+        verify_signed_ordinary_event(
+            &state,
+            signed.as_ordinary().context("expected an ordinary event")?,
+        )?;
 
         Ok(())
     }
@@ -487,7 +493,10 @@ mod tests {
             &signer,
         )?;
 
-        let result = verify_signed_ordinary_event(&deactivated, next.as_ordinary().unwrap());
+        let result = verify_signed_ordinary_event(
+            &deactivated,
+            next.as_ordinary().context("expected an ordinary event")?,
+        );
 
         assert!(matches!(result, Err(EventVerificationError::Deactivated)));
 
@@ -500,7 +509,10 @@ mod tests {
         let (_, other_state) = genesis_state(0x33)?;
         let signed = ordinary_event(&state, IdentityAction::deactivate(), &signer)?;
 
-        let result = verify_signed_ordinary_event(&other_state, signed.as_ordinary().unwrap());
+        let result = verify_signed_ordinary_event(
+            &other_state,
+            signed.as_ordinary().context("expected an ordinary event")?,
+        );
 
         assert!(matches!(
             result,
@@ -518,9 +530,9 @@ mod tests {
             state
                 .sequence()
                 .checked_next()
-                .unwrap()
+                .context("sequence exhausted")?
                 .checked_next()
-                .unwrap(),
+                .context("sequence exhausted")?,
             *state.latest_event(),
             IdentityAction::deactivate(),
         );
@@ -542,7 +554,10 @@ mod tests {
         let (signer, state) = genesis_state(0x11)?;
         let event = IdentityEvent::new(
             *state.id(),
-            state.sequence().checked_next().unwrap(),
+            state
+                .sequence()
+                .checked_next()
+                .context("sequence exhausted")?,
             EventId::from_bytes([0xff; 32]),
             IdentityAction::deactivate(),
         );
@@ -564,7 +579,10 @@ mod tests {
         let (_signer, state) = genesis_state(0x11)?;
         let event = IdentityEvent::new(
             *state.id(),
-            state.sequence().checked_next().unwrap(),
+            state
+                .sequence()
+                .checked_next()
+                .context("sequence exhausted")?,
             *state.latest_event(),
             IdentityAction::deactivate(),
         );
@@ -589,7 +607,10 @@ mod tests {
         let wrong_signer = signing_key(0x99);
         let signed = ordinary_event(&state, IdentityAction::deactivate(), &wrong_signer)?;
 
-        let result = verify_signed_ordinary_event(&state, signed.as_ordinary().unwrap());
+        let result = verify_signed_ordinary_event(
+            &state,
+            signed.as_ordinary().context("expected an ordinary event")?,
+        );
 
         assert!(matches!(
             result,
@@ -604,7 +625,7 @@ mod tests {
         let (_signer, state) = genesis_state(0x11)?;
         let new_signer = signing_key(0x55);
         let new_control = KeySet::new(1, vec![control_key(&new_signer)])?;
-        let new_commitment = derive_next_key_commitment(&keyset(1, &[0x66])?)?;
+        let new_commitment = derive_next_key_commitment(&dummy_keyset(1, &[0x66])?)?;
         let rotation = RotateControl::new(new_control, new_commitment);
         let signed = ordinary_event(
             &state,
@@ -612,7 +633,10 @@ mod tests {
             &new_signer,
         )?;
 
-        verify_signed_ordinary_event(&state, signed.as_ordinary().unwrap())?;
+        verify_signed_ordinary_event(
+            &state,
+            signed.as_ordinary().context("expected an ordinary event")?,
+        )?;
 
         Ok(())
     }

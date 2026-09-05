@@ -44,9 +44,9 @@ pub fn apply_one(
                 return Err(LedgerError::IdentityAlreadyExists(id));
             }
 
-            let state = apply_inception(event)?;
+            let identity_state = apply_inception(event)?;
 
-            Ok(state)
+            Ok(identity_state)
         }
         SignedIdentityEvent::Ordinary(signed_event) => {
             let id = signed_event.event().identity();
@@ -55,9 +55,9 @@ pub fn apply_one(
                 .get(id)
                 .ok_or(LedgerError::UnknownIdentity(*id))?;
 
-            let state = apply_ordinary_event(identity_state, event)?;
+            let next_state = apply_ordinary_event(identity_state, event)?;
 
-            Ok(state)
+            Ok(next_state)
         }
     }
 }

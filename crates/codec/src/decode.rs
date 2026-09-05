@@ -166,14 +166,14 @@ mod tests {
         let bytes = encoder.into_writer();
         let mut decoder = Decoder::new(&bytes);
 
-        let err = require_array_length(&mut decoder, 3).unwrap_err();
+        let result = require_array_length(&mut decoder, 3);
 
         assert!(matches!(
-            err,
-            DecodeError::UnexpectedArrayLength {
+            result,
+            Err(DecodeError::UnexpectedArrayLength {
                 expected: 3,
                 actual: 2
-            }
+            })
         ));
 
         Ok(())
@@ -187,9 +187,9 @@ mod tests {
         let bytes = encoder.into_writer();
         let mut decoder = Decoder::new(&bytes);
 
-        let err = require_array_length(&mut decoder, 0).unwrap_err();
+        let result = require_array_length(&mut decoder, 0);
 
-        assert!(matches!(err, DecodeError::IndefiniteArray));
+        assert!(matches!(result, Err(DecodeError::IndefiniteArray)));
 
         Ok(())
     }
@@ -215,14 +215,14 @@ mod tests {
         let bytes = encoder.into_writer();
         let mut decoder = Decoder::new(&bytes);
 
-        let err = read_bounded_array_length(&mut decoder, 5).unwrap_err();
+        let result = read_bounded_array_length(&mut decoder, 5);
 
         assert!(matches!(
-            err,
-            DecodeError::CollectionTooLarge {
+            result,
+            Err(DecodeError::CollectionTooLarge {
                 maximum: 5,
                 actual: 6
-            }
+            })
         ));
 
         Ok(())
@@ -236,9 +236,9 @@ mod tests {
         let bytes = encoder.into_writer();
         let mut decoder = Decoder::new(&bytes);
 
-        let err = read_bounded_array_length(&mut decoder, 5).unwrap_err();
+        let result = read_bounded_array_length(&mut decoder, 5);
 
-        assert!(matches!(err, DecodeError::IndefiniteArray));
+        assert!(matches!(result, Err(DecodeError::IndefiniteArray)));
 
         Ok(())
     }
@@ -264,14 +264,14 @@ mod tests {
         let bytes = encoder.into_writer();
         let mut decoder = Decoder::new(&bytes);
 
-        let err = read_bounded_map_length(&mut decoder, 5).unwrap_err();
+        let result = read_bounded_map_length(&mut decoder, 5);
 
         assert!(matches!(
-            err,
-            DecodeError::CollectionTooLarge {
+            result,
+            Err(DecodeError::CollectionTooLarge {
                 maximum: 5,
                 actual: 6
-            }
+            })
         ));
 
         Ok(())
@@ -285,9 +285,9 @@ mod tests {
         let bytes = encoder.into_writer();
         let mut decoder = Decoder::new(&bytes);
 
-        let err = read_bounded_map_length(&mut decoder, 5).unwrap_err();
+        let result = read_bounded_map_length(&mut decoder, 5);
 
-        assert!(matches!(err, DecodeError::IndefiniteMap));
+        assert!(matches!(result, Err(DecodeError::IndefiniteMap)));
 
         Ok(())
     }

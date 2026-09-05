@@ -76,14 +76,14 @@ mod tests {
     fn fixed_byte_array_rejects_wrong_length() -> Result<()> {
         let bytes = encode_bytes(&[1, 2, 3])?;
 
-        let err = decode::<Id>(&bytes).unwrap_err();
+        let result = decode::<Id>(&bytes);
 
         assert!(matches!(
-            err,
-            DecodeError::UnexpectedByteLength {
+            result,
+            Err(DecodeError::UnexpectedByteLength {
                 expected: 4,
                 actual: 3
-            }
+            })
         ));
 
         Ok(())
@@ -94,9 +94,9 @@ mod tests {
         let mut bytes = encode_bytes(&[1, 2, 3, 4])?;
         bytes.push(0xff);
 
-        let err = decode::<Id>(&bytes).unwrap_err();
+        let result = decode::<Id>(&bytes);
 
-        assert!(matches!(err, DecodeError::TrailingBytes));
+        assert!(matches!(result, Err(DecodeError::TrailingBytes)));
 
         Ok(())
     }
@@ -106,8 +106,8 @@ mod tests {
         let mut bytes = vec![0x58, 0x04];
         bytes.extend_from_slice(&[1, 2, 3, 4]);
 
-        let err = decode::<Id>(&bytes).unwrap_err();
+        let result = decode::<Id>(&bytes);
 
-        assert!(matches!(err, DecodeError::Noncanonical));
+        assert!(matches!(result, Err(DecodeError::Noncanonical)));
     }
 }

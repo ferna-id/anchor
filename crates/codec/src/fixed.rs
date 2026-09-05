@@ -17,6 +17,10 @@ impl<const N: usize> FixedBytesArray<N> {
     pub const fn to_bytes(self) -> [u8; N] {
         self.0
     }
+
+    pub fn from_slice(slice: &[u8]) -> Option<Self> {
+        Some(Self(slice.try_into().ok()?))
+    }
 }
 
 impl<const N: usize> EncodeValue for FixedBytesArray<N> {

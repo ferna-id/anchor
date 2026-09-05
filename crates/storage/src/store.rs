@@ -19,6 +19,7 @@ use crate::{
     tree::{history_key, versioned_key},
 };
 
+#[derive(Debug)]
 pub struct LedgerStore {
     database: Database,
     write_lock: Mutex<()>,

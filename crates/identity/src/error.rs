@@ -1,4 +1,4 @@
-use anchor_codec::DecodeError;
+use anchor_codec::{DecodeError, EncodeError};
 use thiserror::Error;
 
 #[non_exhaustive]
@@ -42,6 +42,17 @@ pub enum KeySetError {
 
 #[non_exhaustive]
 #[derive(Debug, Error)]
+pub enum KeySignatureListError {
+    #[error("signature count {actual} exceeds maximum {maximum}")]
+    TooManySignatures { maximum: usize, actual: usize },
+    #[error("duplicate signature key index {index}")]
+    DuplicateKeyIndex { index: u16 },
+    #[error("signature key index {actual} follows {previous}")]
+    UnorderedKeyIndex { previous: u16, actual: u16 },
+}
+
+#[non_exhaustive]
+#[derive(Debug, Error)]
 pub enum SignedInceptionError {
     #[error(transparent)]
     KeySignatureList(#[from] KeySignatureListError),
@@ -53,11 +64,13 @@ pub enum SignedInceptionError {
 
 #[non_exhaustive]
 #[derive(Debug, Error)]
-pub enum KeySignatureListError {
-    #[error("signature count {actual} exceeds maximum {maximum}")]
-    TooManySignatures { maximum: usize, actual: usize },
-    #[error("duplicate signature key index {index}")]
-    DuplicateKeyIndex { index: u16 },
-    #[error("signature key index {actual} follows {previous}")]
-    UnorderedKeyIndex { previous: u16, actual: u16 },
+pub enum InceptionVerificationError {
+    #[error(transparent)]
+    Encode(#[from] EncodeError),
+    #[error("signature key index {index} is out of range for {key_count} keys")]
+    KeyIndexOutOfRange { index: u16, key_count: usize },
+    #[error("control key at index {key_index} is not a valid public key")]
+    InvalidPublicKey { key_index: u16 },
+    #[error("invalid signature for control key index {key_index}")]
+    InvalidSignature { key_index: u16 },
 }

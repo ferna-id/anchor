@@ -178,29 +178,16 @@ mod tests {
     use anyhow::Result;
     use minicbor::Encoder;
 
-    use crate::{PublicKey, Signature, derive_next_key_commitment};
+    use crate::derive_next_key_commitment;
+    use crate::testing::{keyset, signature};
 
     use super::*;
-
-    fn key(byte: u8) -> PublicKey {
-        PublicKey::from_ed25519_bytes([byte; 32])
-    }
-
-    fn keyset(threshold: u16, bytes: &[u8]) -> Result<KeySet> {
-        let keys = bytes.iter().copied().map(key).collect();
-
-        Ok(KeySet::new(threshold, keys)?)
-    }
 
     fn inception() -> Result<Inception> {
         let control = keyset(1, &[0x11])?;
         let commitment = derive_next_key_commitment(&keyset(1, &[0x22])?)?;
 
         Ok(Inception::new(control, commitment))
-    }
-
-    fn dummy_signature(index: u16) -> KeySignature {
-        KeySignature::new(index, Signature::from_ed25519_bytes([index as u8; 64]))
     }
 
     #[test]
@@ -231,7 +218,7 @@ mod tests {
         let commitment = derive_next_key_commitment(&keyset(1, &[0x33])?)?;
         let inception = Inception::new(control, commitment);
 
-        let result = SignedInception::new(inception, vec![dummy_signature(0)]);
+        let result = SignedInception::new(inception, vec![signature(0)]);
 
         assert!(matches!(
             result,
@@ -248,7 +235,7 @@ mod tests {
     fn signed_inception_rejects_out_of_range_key_index() -> Result<()> {
         let inception = inception()?;
 
-        let result = SignedInception::new(inception, vec![dummy_signature(1)]);
+        let result = SignedInception::new(inception, vec![signature(1)]);
 
         assert!(matches!(
             result,
@@ -267,7 +254,7 @@ mod tests {
         let commitment = derive_next_key_commitment(&keyset(1, &[0x33])?)?;
         let inception = Inception::new(control, commitment);
 
-        let result = SignedInception::new(inception, vec![dummy_signature(0), dummy_signature(0)]);
+        let result = SignedInception::new(inception, vec![signature(0), signature(0)]);
 
         assert!(matches!(
             result,
@@ -285,7 +272,7 @@ mod tests {
         let commitment = derive_next_key_commitment(&keyset(1, &[0x33])?)?;
         let inception = Inception::new(control, commitment);
 
-        let result = SignedInception::new(inception, vec![dummy_signature(1), dummy_signature(0)]);
+        let result = SignedInception::new(inception, vec![signature(1), signature(0)]);
 
         assert!(matches!(
             result,
@@ -303,7 +290,7 @@ mod tests {
     #[test]
     fn signed_inception_rejects_too_many_signatures() -> Result<()> {
         let inception = inception()?;
-        let signatures = vec![dummy_signature(0); KeySet::MAX_KEYS + 1];
+        let signatures = vec![signature(0); KeySet::MAX_KEYS + 1];
 
         let result = SignedInception::new(inception, signatures);
 
@@ -325,7 +312,7 @@ mod tests {
         let control = keyset(1, &[0x11, 0x22])?;
         let commitment = derive_next_key_commitment(&keyset(1, &[0x33])?)?;
         let inception = Inception::new(control, commitment);
-        let value = SignedInception::new(inception, vec![dummy_signature(0), dummy_signature(1)])?;
+        let value = SignedInception::new(inception, vec![signature(0), signature(1)])?;
         let bytes = encode(&value)?;
 
         assert_eq!(decode::<SignedInception>(&bytes)?, value);
@@ -341,7 +328,7 @@ mod tests {
         encoder.array(2)?;
         inception.encode_value(&mut encoder)?;
         encoder.array(1)?;
-        dummy_signature(5).encode_value(&mut encoder)?;
+        signature(5).encode_value(&mut encoder)?;
 
         let bytes = encoder.into_writer();
 

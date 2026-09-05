@@ -20,8 +20,9 @@ pub use digest::{
 };
 
 pub use error::{
-    ApplyError, DecodeIdentityError, IdentityStateError, InceptionVerificationError, KeySetError,
-    KeySignatureListError, PublicKeyError, SignedInceptionError,
+    ApplyError, DecodeIdentityError, EventVerificationError, IdentityStateError,
+    InceptionVerificationError, KeySetError, KeySignatureListError, PublicKeyError,
+    SignedInceptionError,
 };
 pub use event::{
     AuthorizeDevice, EVENT_VERSION, IdentityAction, IdentityEvent, RevokeDevice, RotateControl,
@@ -29,5 +30,5 @@ pub use event::{
 };
 pub use inception::{Inception, SignedInception};
 pub use signing::{KeySet, KeySignature, PublicKey, Signature};
-pub use state::{DeviceState, IdentityState, apply_inception};
-pub use verify::verify_signed_inception;
+pub use state::{DeviceState, IdentityState, apply_inception, apply_ordinary_event};
+pub use verify::{verify_signed_inception, verify_signed_ordinary_event};

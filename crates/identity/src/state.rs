@@ -7,8 +7,10 @@ use anchor_codec::{
 use minicbor::{Decoder, Encoder};
 
 mod genesis;
+mod ordinary;
 
 pub use genesis::apply_inception;
+pub use ordinary::apply_ordinary_event;
 
 use crate::{
     DecodeIdentityError, DeviceId, EventId, IdentityId, IdentityStateError, KeySet,

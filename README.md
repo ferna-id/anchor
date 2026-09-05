@@ -9,6 +9,12 @@ state under the control of a single service.
 
 Not a general-purpose blockchain or cryptocurrency.
 
+## → Development
+
+```sh
+brew bundle # Install dependencies.
+```
+
 ## → Status
 
 **Early-stage.**

@@ -10,3 +10,6 @@ check:
 
 test:
     cargo test --workspace
+
+demo *args:
+    cargo run -q -p anchor-demo --bin demo -- {{ args }}

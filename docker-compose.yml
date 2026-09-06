@@ -1,0 +1,50 @@
+services:
+  cometbft0:
+    image: cometbft/cometbft:v0.38.26
+    command: ["node", "--home", "/cometbft"]
+    volumes:
+      - ./devnet/node0:/cometbft
+    ports:
+      - "26657:26657"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  cometbft1:
+    image: cometbft/cometbft:v0.38.26
+    command: ["node", "--home", "/cometbft"]
+    volumes:
+      - ./devnet/node1:/cometbft
+    ports:
+      - "26667:26657"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  cometbft2:
+    image: cometbft/cometbft:v0.38.26
+    command: ["node", "--home", "/cometbft"]
+    volumes:
+      - ./devnet/node2:/cometbft
+    ports:
+      - "26677:26657"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  cometbft3:
+    image: cometbft/cometbft:v0.38.26
+    command: ["node", "--home", "/cometbft"]
+    volumes:
+      - ./devnet/node3:/cometbft
+    ports:
+      - "26687:26657"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  cometbft4:
+    image: cometbft/cometbft:v0.38.26
+    command: ["node", "--home", "/cometbft"]
+    volumes:
+      - ./devnet/node4:/cometbft
+    ports:
+      - "26697:26657"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

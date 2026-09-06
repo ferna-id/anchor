@@ -1,2 +1,5 @@
 brew "just"
+brew "mprocs"
 brew "rustup"
+brew "shellcheck"
+brew "shfmt"

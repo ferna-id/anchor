@@ -12,7 +12,10 @@ Not a general-purpose blockchain or cryptocurrency.
 ## → Development
 
 ```sh
-brew bundle # Install dependencies.
+brew bundle          # Install tooling.
+just devnet init     # Generate devnet config.
+docker compose up -d # Start CometBFT.
+mprocs               # Start the nodes.
 ```
 
 ## → Status

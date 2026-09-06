@@ -1,0 +1,11 @@
+procs:
+  node0:
+    cmd: ["cargo", "run", "-p", "anchor-node", "--", "--state", "devnet/node0/anchor", "--abci", "127.0.0.1:26658"]
+  node1:
+    cmd: ["cargo", "run", "-p", "anchor-node", "--", "--state", "devnet/node1/anchor", "--abci", "127.0.0.1:26668"]
+  node2:
+    cmd: ["cargo", "run", "-p", "anchor-node", "--", "--state", "devnet/node2/anchor", "--abci", "127.0.0.1:26678"]
+  node3:
+    cmd: ["cargo", "run", "-p", "anchor-node", "--", "--state", "devnet/node3/anchor", "--abci", "127.0.0.1:26688"]
+  node4:
+    cmd: ["cargo", "run", "-p", "anchor-node", "--", "--state", "devnet/node4/anchor", "--abci", "127.0.0.1:26698"]

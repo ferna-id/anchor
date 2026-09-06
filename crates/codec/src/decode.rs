@@ -5,9 +5,12 @@ use crate::{CanonicalEncode, DecodeError, EncodeValue, encode, encode_list};
 pub trait DecodeValue: Sized {
     type Error: From<DecodeError>;
 
+    /// Reads this value's CBOR encoding from `decoder`.
     fn decode_value(decoder: &mut Decoder<'_>) -> Result<Self, Self::Error>;
 }
 
+/// Decodes a value from its canonical CBOR byte representation. Bytes that parse but don't
+/// round-trip are rejected: re-encoding the decoded value must reproduce the exact input.
 pub fn decode<T>(bytes: &[u8]) -> Result<T, T::Error>
 where
     T: DecodeValue + CanonicalEncode,
@@ -26,6 +29,7 @@ where
     Ok(value)
 }
 
+/// Decodes a CBOR array of at most `maximum` items from `decoder`.
 pub fn decode_array<T>(decoder: &mut Decoder<'_>, maximum: usize) -> Result<Vec<T>, T::Error>
 where
     T: DecodeValue,
@@ -40,6 +44,7 @@ where
     Ok(items)
 }
 
+/// Decodes a standalone CBOR array of at most `maximum` items, rejecting non-canonical encodings.
 pub fn decode_list<T>(bytes: &[u8], maximum: usize) -> Result<Vec<T>, T::Error>
 where
     T: DecodeValue + EncodeValue,
@@ -58,6 +63,7 @@ where
     Ok(items)
 }
 
+/// Reads a CBOR array header and rejects it unless its length is exactly `expected`.
 pub fn require_array_length(decoder: &mut Decoder<'_>, expected: u64) -> Result<(), DecodeError> {
     let actual = decoder.array()?.ok_or(DecodeError::IndefiniteArray)?;
 
@@ -68,6 +74,7 @@ pub fn require_array_length(decoder: &mut Decoder<'_>, expected: u64) -> Result<
     Ok(())
 }
 
+/// Reads a CBOR array header's length, rejecting indefinite-length or over-`maximum` arrays.
 pub fn read_bounded_array_length(
     decoder: &mut Decoder<'_>,
     maximum: usize,
@@ -81,6 +88,7 @@ pub fn read_bounded_array_length(
     Ok(actual)
 }
 
+/// Reads a CBOR map header's length, rejecting indefinite-length or over-`maximum` maps.
 pub fn read_bounded_map_length(
     decoder: &mut Decoder<'_>,
     maximum: usize,

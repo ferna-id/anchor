@@ -102,11 +102,10 @@ struct RawBroadcastTxCommitResponse {
 #[derive(Debug, Deserialize)]
 struct RawCommitResponse {
     signed_header: SignedHeader,
-    // `canonical` is intentionally ignored: verification below checks real
-    // signatures over each vote's own sign bytes.
 }
 
 impl RpcClient {
+    /// Creates a client talking to a single RPC endpoint.
     pub fn new(base_url: impl Into<String>) -> Self {
         Self {
             base_urls: vec![base_url.into()],
@@ -114,6 +113,8 @@ impl RpcClient {
         }
     }
 
+    /// Creates a client backed by multiple RPC endpoints. Each request tries them in a random
+    /// order and returns the first success.
     pub fn new_pool(
         base_urls: impl IntoIterator<Item = impl Into<String>>,
     ) -> Result<Self, RpcError> {
@@ -216,6 +217,7 @@ impl RpcClient {
         }
     }
 
+    /// Returns the node's committed height and app hash.
     pub fn abci_info(&self) -> Result<AbciInfo, RpcError> {
         self.with_endpoint(|base_url| self.abci_info_from(base_url))
     }
@@ -261,6 +263,7 @@ impl RpcClient {
             })
     }
 
+    /// Queries an identity's raw state at `height`, optionally with a Merkle proof.
     pub fn abci_query(
         &self,
         identity_id: [u8; 32],
@@ -270,6 +273,7 @@ impl RpcClient {
         self.abci_query_raw(IDENTITY_QUERY_PATH, &identity_id, height, prove)
     }
 
+    /// Queries a page of an identity's raw event log, starting at sequence `from`.
     pub fn abci_history(
         &self,
         identity_id: [u8; 32],
@@ -344,6 +348,9 @@ impl RpcClient {
         })
     }
 
+    /// Broadcasts a transaction and waits for it to be checked and committed. The response carries
+    /// separate codes for check_tx and tx_result because mempool admission and execution are
+    /// distinct phases; a transaction can pass one and fail the other.
     pub fn broadcast_tx_commit(&self, tx: &[u8]) -> Result<BroadcastTxCommitResponse, RpcError> {
         let query = [("tx", format!("0x{}", hex::encode(tx)))];
         let (_url, raw): (String, RawBroadcastTxCommitResponse) =

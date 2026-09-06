@@ -6,6 +6,7 @@ use crate::{
     derive_event_signature_target, derive_identity_id, derive_inception_signature_target,
 };
 
+/// Verifies a signed inception's control-key signatures and returns the resulting identity ID.
 pub fn verify_signed_inception(
     inception: &SignedInception,
 ) -> Result<IdentityId, InceptionVerificationError> {
@@ -17,6 +18,8 @@ pub fn verify_signed_inception(
     Ok(derive_identity_id(inception.inception())?)
 }
 
+/// Verifies a signed ordinary event against an identity's current state, checking sequencing,
+/// linkage, and control-key signatures.
 pub fn verify_signed_ordinary_event(
     state: &IdentityState,
     signed: &SignedOrdinaryEvent,

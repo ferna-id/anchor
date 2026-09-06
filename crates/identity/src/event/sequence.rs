@@ -7,14 +7,17 @@ pub struct Sequence(u64);
 impl Sequence {
     pub const ZERO: Self = Self(0);
 
+    /// Wraps a raw sequence number.
     pub const fn from_u64(value: u64) -> Self {
         Self(value)
     }
 
+    /// Returns the raw sequence number.
     pub const fn as_u64(self) -> u64 {
         self.0
     }
 
+    /// Returns the next sequence number, or `None` if it would overflow.
     pub const fn checked_next(self) -> Option<Self> {
         match self.0.checked_add(1) {
             Some(value) => Some(Self(value)),

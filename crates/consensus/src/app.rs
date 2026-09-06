@@ -40,6 +40,7 @@ pub struct LedgerApplication {
 }
 
 impl LedgerApplication {
+    /// Wraps a ledger store as a Tendermint ABCI application.
     pub fn new(store: Arc<LedgerStore>) -> Self {
         Self {
             store,

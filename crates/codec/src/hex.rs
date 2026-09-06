@@ -1,9 +1,11 @@
 use crate::HexError;
 
+/// Encodes bytes as lowercase hex.
 pub fn encode(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+/// Decodes a hex string, accepting an optional `0x` prefix.
 pub fn decode(input: &str) -> Result<Vec<u8>, HexError> {
     let input = input.strip_prefix("0x").unwrap_or(input);
 

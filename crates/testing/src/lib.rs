@@ -7,10 +7,12 @@ use anchor_identity::{
 use anyhow::{Context, Result};
 use ed25519_dalek::{Signer, SigningKey};
 
+/// Builds a deterministic Ed25519 public key from a single repeated byte, unrelated to any real signing key.
 pub fn key(byte: u8) -> PublicKey {
     PublicKey::from_ed25519_bytes([byte; 32])
 }
 
+/// Builds a key set of [`key`]-derived public keys with no corresponding signing keys.
 pub fn dummy_keyset(threshold: u16, bytes: &[u8]) -> Result<KeySet> {
     Ok(KeySet::new(
         threshold,
@@ -18,14 +20,17 @@ pub fn dummy_keyset(threshold: u16, bytes: &[u8]) -> Result<KeySet> {
     )?)
 }
 
+/// Builds a deterministic Ed25519 signing key from a single repeated seed byte.
 pub fn signing_key(seed: u8) -> SigningKey {
     SigningKey::from_bytes(&[seed; 32])
 }
 
+/// Returns the public key corresponding to a signing key.
 pub fn control_key(signer: &SigningKey) -> PublicKey {
     PublicKey::from_ed25519_bytes(signer.verifying_key().to_bytes())
 }
 
+/// Builds a key set of real, verifiable public keys derived from [`signing_key`] seeds.
 pub fn real_keyset(threshold: u16, seeds: &[u8]) -> Result<KeySet> {
     let keys = seeds
         .iter()
@@ -36,12 +41,14 @@ pub fn real_keyset(threshold: u16, seeds: &[u8]) -> Result<KeySet> {
     Ok(KeySet::new(threshold, keys)?)
 }
 
+/// Signs `message` with a signing key at the given control-key index.
 pub fn sign(index: u16, key: &SigningKey, message: &[u8]) -> KeySignature {
     let signature = key.sign(message);
 
     KeySignature::new(index, Signature::from_ed25519_bytes(signature.to_bytes()))
 }
 
+/// Builds a one-of-one signed inception for `signer`, committing to a dummy next key.
 pub fn signed_inception(signer: &SigningKey, commitment_seed: u8) -> Result<SignedInception> {
     let control = KeySet::new(1, vec![control_key(signer)])?;
     let commitment = derive_next_key_commitment(&real_keyset(1, &[commitment_seed])?)?;
@@ -54,6 +61,7 @@ pub fn signed_inception(signer: &SigningKey, commitment_seed: u8) -> Result<Sign
     )?)
 }
 
+/// Builds a signed inception event for `signer`, alongside the identity ID it derives.
 pub fn inception_event(
     signer: &SigningKey,
     commitment_seed: u8,
@@ -64,12 +72,14 @@ pub fn inception_event(
     Ok((SignedIdentityEvent::inception(inception), id))
 }
 
+/// Builds an identity's genesis state from a freshly signed inception.
 pub fn genesis_state(signer: &SigningKey, commitment_seed: u8) -> Result<IdentityState> {
     let inception = signed_inception(signer, commitment_seed)?;
 
     Ok(apply_inception(&SignedIdentityEvent::inception(inception))?)
 }
 
+/// Builds a signed deactivation event for the identity's next sequence number.
 pub fn deactivate_event(state: &IdentityState, signer: &SigningKey) -> Result<SignedIdentityEvent> {
     let event = IdentityEvent::new(
         *state.id(),
@@ -86,6 +96,7 @@ pub fn deactivate_event(state: &IdentityState, signer: &SigningKey) -> Result<Si
     Ok(SignedIdentityEvent::ordinary(signed))
 }
 
+/// Builds a signed control-rotation event revealing a [`real_keyset`] control set.
 pub fn rotate_event(
     state: &IdentityState,
     control_seed: u8,

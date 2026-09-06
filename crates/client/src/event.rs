@@ -20,15 +20,18 @@ pub struct InceptionRequest {
 }
 
 impl InceptionRequest {
+    /// Returns the inception configuration to be signed and submitted.
     pub fn configuration(&self) -> &Inception {
         &self.configuration
     }
 
+    /// Returns the bytes control keys must sign to authorize this inception.
     pub fn signing_target(&self) -> &[u8] {
         self.target.as_bytes()
     }
 }
 
+/// Builds an inception configuration ready for signing, without contacting a node.
 pub fn prepare_inception(
     control_keys: &[PublicKey],
     threshold: Option<u16>,
@@ -49,6 +52,7 @@ pub fn prepare_inception(
     })
 }
 
+/// Signs, broadcasts, and confirms an inception, returning the new identity's ID and commit height.
 pub fn finish_inception(
     client: &RpcClient,
     trusted: &TrustedChain,
@@ -75,14 +79,17 @@ pub struct EventRequest {
 }
 
 impl EventRequest {
+    /// Returns the event to be signed and submitted.
     pub fn event(&self) -> &IdentityEvent {
         &self.event
     }
 
+    /// Returns the bytes control keys must sign to authorize this event.
     pub fn signing_target(&self) -> &[u8] {
         self.target.as_bytes()
     }
 
+    /// Returns the control-set index of `key`, if it's authorized to sign this event.
     pub fn key_index(&self, key: &PublicKey) -> Option<u16> {
         self.control
             .keys()
@@ -92,6 +99,7 @@ impl EventRequest {
     }
 }
 
+/// Fetches an identity's current state and builds a control-rotation event ready for signing.
 pub fn prepare_rotate_control(
     client: &RpcClient,
     id: IdentityId,
@@ -110,6 +118,7 @@ pub fn prepare_rotate_control(
     prepare_event(state, id, action)
 }
 
+/// Fetches an identity's current state and builds a device-authorization event ready for signing.
 pub fn prepare_authorize_device(
     client: &RpcClient,
     id: IdentityId,
@@ -121,6 +130,7 @@ pub fn prepare_authorize_device(
     prepare_event(state, id, action)
 }
 
+/// Fetches an identity's current state and builds a device-revocation event ready for signing.
 pub fn prepare_revoke_device(
     client: &RpcClient,
     id: IdentityId,
@@ -132,6 +142,7 @@ pub fn prepare_revoke_device(
     prepare_event(state, id, action)
 }
 
+/// Fetches an identity's current state and builds a deactivation event ready for signing.
 pub fn prepare_deactivate(client: &RpcClient, id: IdentityId) -> Result<EventRequest, ClientError> {
     let state = fetch_state_unverified(client, id)?.ok_or(ClientError::UnknownIdentity(id))?;
 
@@ -162,6 +173,7 @@ fn prepare_event(
     })
 }
 
+/// Signs, broadcasts, and confirms an ordinary event, returning its commit height.
 pub fn finish_event(
     client: &RpcClient,
     trusted: &TrustedChain,
@@ -186,6 +198,7 @@ pub fn finish_event(
     )
 }
 
+/// Creates a new identity, signing with `signers` and submitting it in one call.
 pub fn inception(
     client: &RpcClient,
     trusted: &TrustedChain,
@@ -207,6 +220,7 @@ pub fn inception(
     finish_inception(client, trusted, policy, request, signatures)
 }
 
+/// Rotates an identity's control keys, signing with `signers` and submitting it in one call.
 #[allow(clippy::too_many_arguments)]
 pub fn rotate_control(
     client: &RpcClient,
@@ -233,6 +247,7 @@ pub fn rotate_control(
     finish_event(client, trusted, policy, request, signatures)
 }
 
+/// Authorizes a device, signing with `signers` and submitting it in one call.
 pub fn authorize_device(
     client: &RpcClient,
     trusted: &TrustedChain,
@@ -247,6 +262,7 @@ pub fn authorize_device(
     finish_event(client, trusted, policy, request, signatures)
 }
 
+/// Revokes a device, signing with `signers` and submitting it in one call.
 pub fn revoke_device(
     client: &RpcClient,
     trusted: &TrustedChain,
@@ -261,6 +277,7 @@ pub fn revoke_device(
     finish_event(client, trusted, policy, request, signatures)
 }
 
+/// Deactivates an identity, signing with `signers` and submitting it in one call.
 pub fn deactivate(
     client: &RpcClient,
     trusted: &TrustedChain,

@@ -23,6 +23,7 @@ pub enum Resolution {
     },
 }
 
+/// Resolves a `did:ferna` identifier to its DID Document, verifying the underlying ledger state.
 pub fn resolve(
     client: &RpcClient,
     trusted: &TrustedChain,
@@ -46,6 +47,7 @@ pub fn resolve(
     })
 }
 
+/// Renders a DID Document as pretty-printed JSON-LD.
 pub fn to_json_pretty(document: &Document) -> Result<String, DidError> {
     let represented = JsonLd::new(document.clone(), Options::default());
 

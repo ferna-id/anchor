@@ -3,6 +3,9 @@ use crate::{
     derive_next_key_commitment, derive_signed_event_id, verify_signed_ordinary_event,
 };
 
+/// Verifies a signed ordinary event against an identity's current state and returns the resulting
+/// state. A control rotation clears all authorized devices as a side effect, since they were
+/// authorized under the control set being replaced.
 pub fn apply_ordinary_event(
     state: &IdentityState,
     event: &SignedIdentityEvent,

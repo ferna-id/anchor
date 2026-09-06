@@ -13,6 +13,7 @@ pub const INCEPTION_SIGNATURE_DOMAIN: &str = "id.ferna.anchor.commitment.incepti
 pub const EVENT_SIGNATURE_DOMAIN: &str = "id.ferna.anchor.commitment.event-signature.v0";
 pub const SIGNED_EVENT_ID_DOMAIN: &str = "id.ferna.anchor.commitment.signed-event-id.v0";
 
+/// Derives an identity's ID from its inception configuration.
 pub fn derive_identity_id(inception: &Inception) -> Result<IdentityId, EncodeError> {
     let bytes = encode(inception)?;
     let hash = derive_key(IDENTITY_ID_DOMAIN, &bytes);
@@ -20,6 +21,7 @@ pub fn derive_identity_id(inception: &Inception) -> Result<IdentityId, EncodeErr
     Ok(IdentityId::from_bytes(hash))
 }
 
+/// Derives a device's ID from its public key.
 pub fn derive_device_id(key: &PublicKey) -> Result<DeviceId, EncodeError> {
     let bytes = encode(key)?;
     let hash = derive_key(DEVICE_ID_DOMAIN, &bytes);
@@ -27,6 +29,9 @@ pub fn derive_device_id(key: &PublicKey) -> Result<DeviceId, EncodeError> {
     Ok(DeviceId::from_bytes(hash))
 }
 
+/// Derives the commitment an inception or rotation binds to its next control set. This is what
+/// makes pre-rotation work: the next control set stays secret until it's revealed at rotation
+/// time, so a leaked current key can't redirect the identity to keys of an attacker's choosing.
 pub fn derive_next_key_commitment(next_control: &KeySet) -> Result<NextKeyCommitment, EncodeError> {
     let bytes = encode(next_control)?;
     let hash = derive_key(NEXT_KEY_COMMITMENT_DOMAIN, &bytes);
@@ -34,6 +39,7 @@ pub fn derive_next_key_commitment(next_control: &KeySet) -> Result<NextKeyCommit
     Ok(NextKeyCommitment::from_bytes(hash))
 }
 
+/// Derives the target bytes an inception's control keys must sign.
 pub fn derive_inception_signature_target(
     inception: &Inception,
 ) -> Result<InceptionSignatureTarget, EncodeError> {
@@ -43,6 +49,7 @@ pub fn derive_inception_signature_target(
     Ok(InceptionSignatureTarget::from_bytes(hash))
 }
 
+/// Derives the target bytes an ordinary event's control keys must sign.
 pub fn derive_event_signature_target(
     event: &IdentityEvent,
 ) -> Result<EventSignatureTarget, EncodeError> {
@@ -52,6 +59,7 @@ pub fn derive_event_signature_target(
     Ok(EventSignatureTarget::from_bytes(hash))
 }
 
+/// Derives a signed event's ID, used to reference it from later events and query responses.
 pub fn derive_signed_event_id(event: &SignedIdentityEvent) -> Result<EventId, EncodeError> {
     let bytes = encode(event)?;
     let hash = derive_key(SIGNED_EVENT_ID_DOMAIN, &bytes);

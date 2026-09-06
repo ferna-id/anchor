@@ -13,6 +13,9 @@ pub struct HistoryResult {
     pub events: Vec<SignedIdentityEvent>,
 }
 
+/// Fetches and replays an identity's complete signed event history, verifying it matches the
+/// proven current state. Individual events aren't Merkle-proven on their own; trust comes from
+/// the replay landing exactly on the state `query` already verified.
 pub fn history(
     client: &RpcClient,
     trusted: &TrustedChain,

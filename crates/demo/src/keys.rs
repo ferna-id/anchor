@@ -5,6 +5,7 @@ use ed25519_dalek::SigningKey;
 
 use crate::error::KeyError;
 
+/// Generates a fresh signing key and writes its hex seed to `path`.
 pub fn generate(path: &Path, force: bool) -> Result<SigningKey, KeyError> {
     if !force && path.exists() {
         return Err(KeyError::AlreadyExists(path.display().to_string()));
@@ -20,6 +21,7 @@ pub fn generate(path: &Path, force: bool) -> Result<SigningKey, KeyError> {
     Ok(key)
 }
 
+/// Loads a signing key from its hex seed file.
 pub fn load(path: &Path) -> Result<SigningKey, KeyError> {
     let contents = fs::read_to_string(path).map_err(|source| KeyError::Read {
         path: path.display().to_string(),

@@ -12,6 +12,9 @@ pub struct QueryResult {
     pub state: Option<IdentityState>,
 }
 
+/// Queries an identity's state at the latest verifiable height, verifying the signed header and
+/// Merkle proof. The queried height trails the signed header by one block, since a header's
+/// app_hash commits to the state after the *previous* block.
 pub fn query(
     client: &RpcClient,
     trusted: &TrustedChain,

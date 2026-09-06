@@ -14,20 +14,24 @@ pub struct IdentityStateProof {
 // `SparseMerkleProof` has no public constructor from raw parts,
 // so there's no way to decode our own wire format back into one.
 impl IdentityStateProof {
+    /// Wraps a JMT sparse Merkle proof.
     pub fn new(proof: SparseMerkleProof<LedgerHasher>) -> Self {
         Self { proof }
     }
 
+    /// Decodes a proof from its Borsh wire format.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, ProofError> {
         let proof = borsh::from_slice(bytes)?;
 
         Ok(Self::new(proof))
     }
 
+    /// Encodes the proof to its Borsh wire format.
     pub fn to_bytes(&self) -> Result<Vec<u8>, ProofError> {
         Ok(borsh::to_vec(&self.proof)?)
     }
 
+    /// Verifies that `identity_state` is the value committed to `identity_id` under `root_hash`.
     pub fn verify_existence(
         &self,
         root_hash: RootHash,
@@ -43,6 +47,7 @@ impl IdentityStateProof {
         )?)
     }
 
+    /// Verifies that `identity_id` has no committed value under `root_hash`.
     pub fn verify_nonexistence(
         &self,
         root_hash: RootHash,

@@ -6,18 +6,22 @@ use crate::{DecodeError, DecodeValue, EncodeError, EncodeValue};
 pub struct FixedBytesArray<const N: usize>([u8; N]);
 
 impl<const N: usize> FixedBytesArray<N> {
+    /// Wraps a fixed-size byte array.
     pub const fn from_bytes(bytes: [u8; N]) -> Self {
         Self(bytes)
     }
 
+    /// Returns the underlying bytes by reference.
     pub const fn as_bytes(&self) -> &[u8; N] {
         &self.0
     }
 
+    /// Returns the underlying bytes, consuming `self`.
     pub const fn to_bytes(self) -> [u8; N] {
         self.0
     }
 
+    /// Wraps a byte slice, returning `None` if its length isn't exactly `N`.
     pub fn from_slice(slice: &[u8]) -> Option<Self> {
         Some(Self(slice.try_into().ok()?))
     }

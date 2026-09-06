@@ -31,6 +31,9 @@ pub struct IdentityState {
 impl IdentityState {
     pub const MAX_DEVICES: usize = 32;
 
+    /// Builds a validated identity state from its parts, rejecting invalid or inconsistent input:
+    /// invalid control or device public keys, too many devices, a device ID that doesn't match
+    /// its derived key, or duplicate device IDs.
     pub fn from_parts(
         id: IdentityId,
         sequence: Sequence,
@@ -82,30 +85,37 @@ impl IdentityState {
         })
     }
 
+    /// Returns the identity's ID.
     pub const fn id(&self) -> &IdentityId {
         &self.id
     }
 
+    /// Returns the sequence number of the identity's latest applied event.
     pub const fn sequence(&self) -> Sequence {
         self.sequence
     }
 
+    /// Returns the ID of the identity's latest applied event.
     pub const fn latest_event(&self) -> &EventId {
         &self.latest_event
     }
 
+    /// Returns the identity's current control key set.
     pub const fn control(&self) -> &KeySet {
         &self.control
     }
 
+    /// Returns the commitment the identity's next control rotation must reveal.
     pub const fn commitment(&self) -> &NextKeyCommitment {
         &self.commitment
     }
 
+    /// Returns the identity's currently authorized devices.
     pub const fn devices(&self) -> &BTreeMap<DeviceId, DeviceState> {
         &self.devices
     }
 
+    /// Returns whether the identity has been permanently deactivated.
     pub const fn is_deactivated(&self) -> bool {
         self.deactivated
     }
@@ -182,14 +192,17 @@ pub struct DeviceState {
 }
 
 impl DeviceState {
+    /// Wraps an authorized device's public key.
     pub const fn new(key: PublicKey) -> Self {
         Self { key }
     }
 
+    /// Returns the device's public key.
     pub const fn key(&self) -> &PublicKey {
         &self.key
     }
 
+    /// Derives this device's ID from its public key.
     pub fn id(&self) -> Result<DeviceId, EncodeError> {
         derive_device_id(&self.key)
     }

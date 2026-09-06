@@ -2,10 +2,12 @@
 pub struct Height(u64);
 
 impl Height {
+    /// Wraps a raw block height.
     pub const fn from_u64(value: u64) -> Self {
         Self(value)
     }
 
+    /// Returns the raw block height.
     pub const fn as_u64(self) -> u64 {
         self.0
     }

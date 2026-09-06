@@ -10,6 +10,7 @@ use ed25519_dalek::SigningKey;
 
 use crate::{error::CliError, keys, output};
 
+/// Generates a signing key and writes its hex seed to `path`.
 pub fn keygen(path: &Path, force: bool) -> Result<(), CliError> {
     let key = keys::generate(path, force)?;
     let public = key.verifying_key().to_bytes();
@@ -20,6 +21,7 @@ pub fn keygen(path: &Path, force: bool) -> Result<(), CliError> {
     Ok(())
 }
 
+/// Prints the hex public key for a signing key file.
 pub fn pubkey(path: &Path) -> Result<(), CliError> {
     let key = keys::load(path)?;
 
@@ -28,6 +30,7 @@ pub fn pubkey(path: &Path) -> Result<(), CliError> {
     Ok(())
 }
 
+/// Creates a new identity and prints its ID and DID.
 pub fn inception(
     node: &str,
     genesis_path: &Path,
@@ -62,6 +65,7 @@ pub fn inception(
     Ok(())
 }
 
+/// Queries and prints an identity's verified current state.
 pub fn query(
     node: &str,
     genesis_path: &Path,
@@ -117,6 +121,7 @@ pub fn query(
     Ok(())
 }
 
+/// Fetches and prints an identity's verified event history.
 pub fn history(
     node: &str,
     genesis_path: &Path,
@@ -149,6 +154,7 @@ pub fn history(
     Ok(())
 }
 
+/// Resolves a `did:ferna` identifier and prints its DID Document.
 pub fn resolve(
     node: &str,
     genesis_path: &Path,
@@ -196,6 +202,7 @@ fn event_summary(event: &SignedIdentityEvent) -> (Sequence, &'static str) {
     }
 }
 
+/// Rotates an identity's control keys.
 #[allow(clippy::too_many_arguments)]
 pub fn rotate_control(
     node: &str,
@@ -238,6 +245,7 @@ pub fn rotate_control(
     Ok(())
 }
 
+/// Authorizes a new device key for an identity.
 pub fn authorize_device(
     node: &str,
     genesis_path: &Path,
@@ -260,6 +268,7 @@ pub fn authorize_device(
     Ok(())
 }
 
+/// Revokes an authorized device from an identity.
 pub fn revoke_device(
     node: &str,
     genesis_path: &Path,
@@ -281,6 +290,7 @@ pub fn revoke_device(
     Ok(())
 }
 
+/// Permanently deactivates an identity.
 pub fn deactivate(
     node: &str,
     genesis_path: &Path,

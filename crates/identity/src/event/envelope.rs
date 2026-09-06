@@ -22,6 +22,7 @@ pub struct IdentityEvent {
 }
 
 impl IdentityEvent {
+    /// Creates an ordinary event for an identity's next sequence number.
     pub const fn new(
         identity: IdentityId,
         sequence: Sequence,
@@ -37,22 +38,27 @@ impl IdentityEvent {
         }
     }
 
+    /// Returns the encoding version this event was created with.
     pub const fn version(&self) -> u16 {
         self.version
     }
 
+    /// Returns the ID of the identity this event applies to.
     pub const fn identity(&self) -> &IdentityId {
         &self.identity
     }
 
+    /// Returns this event's sequence number.
     pub const fn sequence(&self) -> Sequence {
         self.sequence
     }
 
+    /// Returns the ID of the event this one follows.
     pub const fn previous(&self) -> &EventId {
         &self.previous
     }
 
+    /// Returns the action this event applies.
     pub const fn action(&self) -> &IdentityAction {
         &self.action
     }
@@ -99,6 +105,7 @@ pub struct SignedOrdinaryEvent {
 }
 
 impl SignedOrdinaryEvent {
+    /// Pairs an ordinary event with its control-key signatures, validating their key-index ordering.
     pub fn new(
         event: IdentityEvent,
         signatures: Vec<KeySignature>,
@@ -134,10 +141,12 @@ impl SignedOrdinaryEvent {
         Ok(Self { event, signatures })
     }
 
+    /// Returns the event.
     pub const fn event(&self) -> &IdentityEvent {
         &self.event
     }
 
+    /// Returns the control-key signatures over the event.
     pub fn signatures(&self) -> &[KeySignature] {
         &self.signatures
     }
@@ -184,10 +193,12 @@ pub enum SignedIdentityEvent {
 }
 
 impl SignedIdentityEvent {
+    /// Wraps a signed inception as an identity event.
     pub const fn inception(inception: SignedInception) -> Self {
         Self::Inception(inception)
     }
 
+    /// Returns the signed inception, if this event is one.
     pub const fn as_inception(&self) -> Option<&SignedInception> {
         match self {
             Self::Inception(inception) => Some(inception),
@@ -195,10 +206,12 @@ impl SignedIdentityEvent {
         }
     }
 
+    /// Wraps a signed ordinary event as an identity event.
     pub const fn ordinary(event: SignedOrdinaryEvent) -> Self {
         Self::Ordinary(event)
     }
 
+    /// Returns the signed ordinary event, if this event is one.
     pub const fn as_ordinary(&self) -> Option<&SignedOrdinaryEvent> {
         match self {
             Self::Inception(_) => None,

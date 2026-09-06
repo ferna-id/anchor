@@ -13,6 +13,7 @@ pub struct TaggedBytes<Tag, const N: usize> {
 }
 
 impl<Tag, const N: usize> TaggedBytes<Tag, N> {
+    /// Wraps a fixed-size byte array under this type's tag.
     pub const fn from_bytes(bytes: [u8; N]) -> Self {
         Self {
             bytes: FixedBytesArray::from_bytes(bytes),
@@ -20,14 +21,17 @@ impl<Tag, const N: usize> TaggedBytes<Tag, N> {
         }
     }
 
+    /// Returns the underlying bytes by reference.
     pub const fn as_bytes(&self) -> &[u8; N] {
         self.bytes.as_bytes()
     }
 
+    /// Returns the underlying bytes, consuming `self`.
     pub const fn to_bytes(self) -> [u8; N] {
         self.bytes.to_bytes()
     }
 
+    /// Wraps a byte slice under this type's tag, returning `None` if its length isn't exactly `N`.
     pub fn from_slice(slice: &[u8]) -> Option<Self> {
         Some(Self {
             bytes: FixedBytesArray::from_slice(slice)?,

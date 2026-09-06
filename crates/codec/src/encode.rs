@@ -3,14 +3,17 @@ use minicbor::Encoder;
 use crate::EncodeError;
 
 pub trait CanonicalEncode {
+    /// Encodes `self` to its canonical CBOR byte representation.
     fn to_canonical_bytes(&self) -> Result<Vec<u8>, EncodeError>;
 }
 
+/// Encodes a value to its canonical CBOR byte representation.
 pub fn encode<T: CanonicalEncode>(value: &T) -> Result<Vec<u8>, EncodeError> {
     value.to_canonical_bytes()
 }
 
 pub trait EncodeValue {
+    /// Writes this value's CBOR encoding into `encoder`.
     fn encode_value(&self, encoder: &mut Encoder<Vec<u8>>) -> Result<(), EncodeError>;
 }
 
@@ -24,6 +27,7 @@ impl<T: EncodeValue> CanonicalEncode for T {
     }
 }
 
+/// Encodes a CBOR array of `items` into `encoder`.
 pub fn encode_array<T: EncodeValue>(
     encoder: &mut Encoder<Vec<u8>>,
     items: &[T],
@@ -37,6 +41,7 @@ pub fn encode_array<T: EncodeValue>(
     Ok(())
 }
 
+/// Encodes `items` as a standalone CBOR array.
 pub fn encode_list<T: EncodeValue>(items: &[T]) -> Result<Vec<u8>, EncodeError> {
     let mut encoder = Encoder::new(Vec::new());
 

@@ -17,6 +17,7 @@ pub struct Inception {
 }
 
 impl Inception {
+    /// Creates an identity's inception configuration.
     pub fn new(control: KeySet, commitment: NextKeyCommitment) -> Self {
         Self {
             version: EVENT_VERSION,
@@ -25,14 +26,17 @@ impl Inception {
         }
     }
 
+    /// Returns the encoding version this inception was created with.
     pub fn version(&self) -> u16 {
         self.version
     }
 
+    /// Returns the identity's initial control key set.
     pub fn control(&self) -> &KeySet {
         &self.control
     }
 
+    /// Returns the commitment the identity's first control rotation must reveal.
     pub fn commitment(&self) -> &NextKeyCommitment {
         &self.commitment
     }
@@ -75,6 +79,7 @@ pub struct SignedInception {
 }
 
 impl SignedInception {
+    /// Pairs an inception with its control-key signatures, validating them against the control set.
     pub fn new(
         inception: Inception,
         signatures: Vec<KeySignature>,
@@ -131,10 +136,12 @@ impl SignedInception {
         })
     }
 
+    /// Returns the inception configuration.
     pub const fn inception(&self) -> &Inception {
         &self.inception
     }
 
+    /// Returns the control-key signatures over the inception.
     pub fn signatures(&self) -> &[KeySignature] {
         &self.signatures
     }

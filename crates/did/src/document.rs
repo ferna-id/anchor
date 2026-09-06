@@ -10,10 +10,12 @@ use ssi::{
     multicodec::{ED25519_PUB, MultiEncodedBuf, P256_PUB},
 };
 
+/// Returns the verification method ID for the control key at `index`.
 pub fn control_key_id(did: impl std::fmt::Display, index: usize) -> String {
     format!("{did}#control-{index}")
 }
 
+/// Returns the verification method ID for a device's key.
 pub fn device_key_id(did: impl std::fmt::Display, device_id: &DeviceId) -> String {
     format!(
         "{did}#device-{}",
@@ -21,6 +23,7 @@ pub fn device_key_id(did: impl std::fmt::Display, device_id: &DeviceId) -> Strin
     )
 }
 
+/// Builds a DID Document from an identity's current state.
 pub fn build_document(did: &DIDBuf, state: &IdentityState) -> Document {
     let mut document = Document::new(did.clone());
 

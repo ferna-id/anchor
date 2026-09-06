@@ -6,6 +6,7 @@ use crate::DidError;
 
 const METHOD_NAME: &str = "ferna";
 
+/// Formats an identity ID as a `did:ferna` identifier.
 pub fn to_did(id: &IdentityId) -> DIDBuf {
     let encoded = multibase::encode(Base::Base58Btc, id.as_bytes());
 
@@ -13,6 +14,7 @@ pub fn to_did(id: &IdentityId) -> DIDBuf {
         .expect("a multibase string is always a valid DID method-specific-id")
 }
 
+/// Parses a `did:ferna` identifier back into its identity ID.
 pub fn parse_did(input: &str) -> Result<IdentityId, DidError> {
     let did = DID::new(input).map_err(|_| DidError::UnsupportedDid(input.to_string()))?;
 

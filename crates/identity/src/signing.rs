@@ -16,14 +16,17 @@ pub enum Signature {
 }
 
 impl Signature {
+    /// Wraps a raw Ed25519 signature.
     pub const fn from_ed25519_bytes(bytes: [u8; 64]) -> Self {
         Self::Ed25519(bytes)
     }
 
+    /// Wraps a raw P-256 signature.
     pub const fn from_p256_bytes(bytes: [u8; 64]) -> Self {
         Self::P256(bytes)
     }
 
+    /// Returns the raw signature bytes by reference.
     pub const fn as_bytes(&self) -> &[u8] {
         match self {
             Self::Ed25519(bytes) => bytes,
@@ -31,6 +34,7 @@ impl Signature {
         }
     }
 
+    /// Returns the raw signature bytes, consuming `self`.
     pub fn to_bytes(self) -> Vec<u8> {
         match self {
             Self::Ed25519(bytes) => bytes.to_vec(),
@@ -71,6 +75,7 @@ pub struct KeySignature {
 }
 
 impl KeySignature {
+    /// Pairs a signature with the index of the control key that produced it.
     pub const fn new(key_index: u16, signature: Signature) -> Self {
         Self {
             key_index,
@@ -78,10 +83,12 @@ impl KeySignature {
         }
     }
 
+    /// Returns the index of the control key that produced this signature.
     pub const fn key_index(&self) -> u16 {
         self.key_index
     }
 
+    /// Returns the signature.
     pub const fn signature(&self) -> &Signature {
         &self.signature
     }
@@ -117,14 +124,17 @@ pub enum PublicKey {
 }
 
 impl PublicKey {
+    /// Wraps a raw Ed25519 public key.
     pub const fn from_ed25519_bytes(bytes: [u8; 32]) -> Self {
         Self::Ed25519(bytes)
     }
 
+    /// Wraps a raw P-256 public key.
     pub const fn from_p256_bytes(bytes: [u8; 33]) -> Self {
         Self::P256(bytes)
     }
 
+    /// Returns the raw public key bytes by reference.
     pub const fn as_bytes(&self) -> &[u8] {
         match self {
             Self::Ed25519(bytes) => bytes,
@@ -132,6 +142,7 @@ impl PublicKey {
         }
     }
 
+    /// Returns the raw public key bytes, consuming `self`.
     pub fn to_bytes(self) -> Vec<u8> {
         match self {
             Self::Ed25519(bytes) => bytes.to_vec(),
@@ -181,6 +192,7 @@ pub struct KeySet {
 impl KeySet {
     pub const MAX_KEYS: usize = 32;
 
+    /// Builds a key set, rejecting an empty, oversized, duplicate-containing, or invalid-threshold set.
     pub fn new(threshold: u16, keys: Vec<PublicKey>) -> Result<Self, KeySetError> {
         if keys.is_empty() {
             return Err(KeySetError::Empty);
@@ -213,10 +225,12 @@ impl KeySet {
         Ok(Self { threshold, keys })
     }
 
+    /// Returns the number of signatures required to authorize an action under this set.
     pub fn threshold(&self) -> u16 {
         self.threshold
     }
 
+    /// Returns the set's public keys, in order.
     pub fn keys(&self) -> &[PublicKey] {
         &self.keys
     }

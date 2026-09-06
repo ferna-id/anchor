@@ -17,18 +17,22 @@ pub enum IdentityAction {
 }
 
 impl IdentityAction {
+    /// Wraps a control-rotation action.
     pub const fn rotate_control(rotation: RotateControl) -> Self {
         Self::RotateControl(rotation)
     }
 
+    /// Wraps a device-authorization action.
     pub const fn authorize_device(authorization: AuthorizeDevice) -> Self {
         Self::AuthorizeDevice(authorization)
     }
 
+    /// Wraps a device-revocation action.
     pub const fn revoke_device(revocation: RevokeDevice) -> Self {
         Self::RevokeDevice(revocation)
     }
 
+    /// Creates a deactivation action.
     pub const fn deactivate() -> Self {
         Self::Deactivate
     }
@@ -105,6 +109,7 @@ pub struct RotateControl {
 }
 
 impl RotateControl {
+    /// Creates a rotation revealing a new control set and committing to the one after it.
     pub const fn new(control: KeySet, commitment: NextKeyCommitment) -> Self {
         Self {
             control,
@@ -112,10 +117,12 @@ impl RotateControl {
         }
     }
 
+    /// Returns the control set this rotation reveals.
     pub const fn control(&self) -> &KeySet {
         &self.control
     }
 
+    /// Returns the commitment this rotation binds to the following control set.
     pub const fn commitment(&self) -> &NextKeyCommitment {
         &self.commitment
     }
@@ -150,10 +157,12 @@ pub struct AuthorizeDevice {
 }
 
 impl AuthorizeDevice {
+    /// Creates an authorization for the given device public key.
     pub const fn new(key: PublicKey) -> Self {
         Self { key }
     }
 
+    /// Returns the device's public key.
     pub const fn key(&self) -> &PublicKey {
         &self.key
     }
@@ -186,10 +195,12 @@ pub struct RevokeDevice {
 }
 
 impl RevokeDevice {
+    /// Creates a revocation for the given device ID.
     pub const fn new(device: DeviceId) -> Self {
         Self { device }
     }
 
+    /// Returns the ID of the device being revoked.
     pub const fn device(&self) -> &DeviceId {
         &self.device
     }

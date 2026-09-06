@@ -3,6 +3,7 @@ use crate::{
     verify_signed_inception,
 };
 
+/// Verifies a signed inception event and returns the identity's genesis state.
 pub fn apply_inception(event: &SignedIdentityEvent) -> Result<IdentityState, ApplyError> {
     let inception = event.as_inception().ok_or(ApplyError::ExpectedInception)?;
     let id = verify_signed_inception(inception)?;

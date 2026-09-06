@@ -13,6 +13,9 @@ pub struct TrustedChain {
 }
 
 impl TrustedChain {
+    /// Builds a trust root from a CometBFT genesis file's chain ID and validator set. Validates
+    /// that each validator's address matches its public key and that total voting power can't
+    /// overflow.
     pub fn from_genesis_json(json: &str) -> Result<Self, TrustedError> {
         let genesis: TrustedGenesis = serde_json::from_str(json)?;
 

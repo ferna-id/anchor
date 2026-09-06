@@ -13,25 +13,30 @@ pub struct LedgerState {
 }
 
 impl LedgerState {
+    /// Creates a ledger state with no identities.
     pub fn empty() -> Self {
         Self {
             identities: BTreeMap::new(),
         }
     }
 
+    /// Wraps a map of identity states as a ledger state.
     pub fn from_identities(identities: BTreeMap<IdentityId, IdentityState>) -> Self {
         Self { identities }
     }
 
+    /// Returns all identities in the ledger, keyed by ID.
     pub fn identities(&self) -> &BTreeMap<IdentityId, IdentityState> {
         &self.identities
     }
 
+    /// Returns a single identity's state, if it exists.
     pub fn identity(&self, id: &IdentityId) -> Option<&IdentityState> {
         self.identities.get(id)
     }
 }
 
+/// Applies a single event to the ledger and returns the resulting identity state, without mutating `state`.
 pub fn apply_one(
     state: &LedgerState,
     event: &SignedIdentityEvent,
@@ -62,6 +67,7 @@ pub fn apply_one(
     }
 }
 
+/// Applies a batch of transactions to the ledger, rejecting the whole batch if any event is invalid.
 pub fn apply_all(
     state: &LedgerState,
     transactions: &[SignedIdentityEvent],
@@ -77,6 +83,9 @@ pub fn apply_all(
     Ok(scratch)
 }
 
+/// Applies each candidate that succeeds against the running state, silently dropping the rest.
+/// Acceptance is order-dependent: state accumulates through the batch, so a later candidate can
+/// be dropped because an earlier one already changed the state it depended on.
 pub fn select_valid(
     state: &LedgerState,
     candidates: &[SignedIdentityEvent],

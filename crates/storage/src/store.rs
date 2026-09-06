@@ -30,6 +30,7 @@ impl LedgerStore {
         &self.database
     }
 
+    /// Opens (or creates) a redb-backed ledger store at `path`.
     pub fn open(path: &Path) -> Result<Self, StorageError> {
         let database = Database::create(path)?;
         let write = database.begin_write()?;
@@ -48,6 +49,7 @@ impl LedgerStore {
         })
     }
 
+    /// Returns the height of the last committed block, or 0 if none has been committed.
     pub fn height(&self) -> Result<u64, StorageError> {
         let read = self.database.begin_read()?;
 
@@ -60,6 +62,7 @@ impl LedgerStore {
         Ok(height)
     }
 
+    /// Loads the full ledger state as of the last commit.
     pub fn load(&self) -> Result<LedgerState, StorageError> {
         let read = self.database.begin_read()?;
 
@@ -96,6 +99,7 @@ impl LedgerStore {
         Ok(Jmt::new(self).put_value_set(value_set(changed)?, height.as_u64())?)
     }
 
+    /// Durably writes changed identities and their events at `height`, advancing the ledger by one block.
     pub fn commit(
         &self,
         height: Height,
@@ -154,6 +158,7 @@ impl LedgerStore {
         Ok(root)
     }
 
+    /// Returns the committed state root at `height`.
     pub fn state_root(&self, height: Height) -> Result<RootHash, StorageError> {
         let height = height.as_u64();
         let root = Jmt::new(self).get_root_hash_option(height)?;
@@ -165,6 +170,7 @@ impl LedgerStore {
         }
     }
 
+    /// Computes the state root `commit` would produce for `changed`, without writing anything.
     pub fn preview_root(
         &self,
         height: Height,
@@ -175,6 +181,7 @@ impl LedgerStore {
         Ok(root)
     }
 
+    /// Returns an identity's state at `height` along with a Merkle proof of its inclusion or absence.
     pub fn prove(
         &self,
         id: IdentityId,
@@ -189,6 +196,7 @@ impl LedgerStore {
         Ok((state, IdentityStateProof::new(proof)))
     }
 
+    /// Returns up to `limit` of an identity's stored events, starting at sequence `from`.
     pub fn event_log(
         &self,
         id: IdentityId,

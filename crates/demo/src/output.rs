@@ -1,5 +1,6 @@
 use owo_colors::{OwoColorize, Stream};
 
+/// Prints a success message to stdout.
 pub fn success(message: &str) {
     println!(
         "{} {message}",
@@ -7,6 +8,7 @@ pub fn success(message: &str) {
     );
 }
 
+/// Prints an error message to stderr.
 pub fn error(message: &str) {
     eprintln!(
         "{} {message}",
@@ -14,6 +16,7 @@ pub fn error(message: &str) {
     );
 }
 
+/// Prints a bold section header to stdout.
 pub fn header(text: &str) {
     println!(
         "{}",
@@ -21,6 +24,7 @@ pub fn header(text: &str) {
     );
 }
 
+/// Prints a labeled field to stdout.
 pub fn field(label: &str, value: &str) {
     println!(
         "  {}: {value}",

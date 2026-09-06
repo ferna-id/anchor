@@ -58,7 +58,7 @@ pub enum RpcError {
     #[error("http request to {url} failed: {source}")]
     Http {
         url: String,
-        source: Box<ureq::Error>,
+        source: Box<reqwest::Error>,
     },
     #[error("could not parse response from {url}: {source}")]
     Json {

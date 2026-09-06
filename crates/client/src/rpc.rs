@@ -3,7 +3,6 @@ use base64::prelude::*;
 use serde::Deserialize;
 use std::time::Duration;
 use tendermint::block::signed_header::SignedHeader;
-use ureq::Agent;
 
 use crate::RpcError;
 
@@ -13,7 +12,7 @@ const IDENTITY_HISTORY_QUERY_PATH: &str = "\"/identity/history\"";
 
 pub struct RpcClient {
     base_urls: Vec<String>,
-    agent: ureq::Agent,
+    client: reqwest::Client,
 }
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
@@ -109,7 +108,7 @@ impl RpcClient {
     pub fn new(base_url: impl Into<String>) -> Self {
         Self {
             base_urls: vec![base_url.into()],
-            agent: rpc_agent(),
+            client: http_client(),
         }
     }
 
@@ -126,24 +125,26 @@ impl RpcClient {
 
         Ok(Self {
             base_urls,
-            agent: rpc_agent(),
+            client: http_client(),
         })
     }
 
-    fn get<T: serde::de::DeserializeOwned>(
+    async fn get<T: serde::de::DeserializeOwned>(
         &self,
         method: &str,
         query: &[(&str, String)],
     ) -> Result<(String, T), RpcError> {
-        self.with_endpoint(|base_url| {
+        self.with_endpoint(async |base_url| {
             self.get_from(base_url, method, query)
+                .await
                 .map(|value| (base_url.to_string(), value))
         })
+        .await
     }
 
-    fn with_endpoint<T>(
+    async fn with_endpoint<T>(
         &self,
-        mut attempt: impl FnMut(&str) -> Result<T, RpcError>,
+        mut attempt: impl AsyncFnMut(&str) -> Result<T, RpcError>,
     ) -> Result<T, RpcError> {
         use rand::seq::SliceRandom;
 
@@ -153,7 +154,7 @@ impl RpcClient {
         let mut last_error = None;
 
         for base_url in order {
-            match attempt(base_url) {
+            match attempt(base_url).await {
                 Ok(value) => return Ok(value),
                 Err(error) => last_error = Some(error),
             }
@@ -162,7 +163,7 @@ impl RpcClient {
         Err(last_error.expect("base_urls is non-empty, checked at construction"))
     }
 
-    fn get_from<T: serde::de::DeserializeOwned>(
+    async fn get_from<T: serde::de::DeserializeOwned>(
         &self,
         base_url: &str,
         method: &str,
@@ -170,20 +171,19 @@ impl RpcClient {
     ) -> Result<T, RpcError> {
         let url = format!("{}/{method}", base_url.trim_end_matches('/'));
 
-        let mut request = self.agent.get(&url);
-
-        for (key, value) in query {
-            request = request.query(*key, value);
-        }
-
-        let text = request
-            .call()
+        let text = self
+            .client
+            .get(&url)
+            .query(query)
+            .send()
+            .await
+            .and_then(reqwest::Response::error_for_status)
             .map_err(|source| RpcError::Http {
                 url: url.clone(),
                 source: Box::new(source),
             })?
-            .body_mut()
-            .read_to_string()
+            .text()
+            .await
             .map_err(|source| RpcError::Http {
                 url: url.clone(),
                 source: Box::new(source),
@@ -218,17 +218,18 @@ impl RpcClient {
     }
 
     /// Returns the node's committed height and app hash.
-    pub fn abci_info(&self) -> Result<AbciInfo, RpcError> {
-        self.with_endpoint(|base_url| self.abci_info_from(base_url))
+    pub async fn abci_info(&self) -> Result<AbciInfo, RpcError> {
+        self.with_endpoint(async |base_url| self.abci_info_from(base_url).await)
+            .await
     }
 
-    fn abci_info_from(&self, base_url: &str) -> Result<AbciInfo, RpcError> {
+    async fn abci_info_from(&self, base_url: &str) -> Result<AbciInfo, RpcError> {
         #[derive(Deserialize)]
         struct Wrapper {
             response: RawAbciInfo,
         }
 
-        let raw: Wrapper = self.get_from(base_url, "abci_info", &[])?;
+        let raw: Wrapper = self.get_from(base_url, "abci_info", &[]).await?;
         let raw = raw.response;
         let height = raw
             .last_block_height
@@ -264,17 +265,18 @@ impl RpcClient {
     }
 
     /// Queries an identity's raw state at `height`, optionally with a Merkle proof.
-    pub fn abci_query(
+    pub async fn abci_query(
         &self,
         identity_id: [u8; 32],
         height: u64,
         prove: bool,
     ) -> Result<AbciQueryResponse, RpcError> {
         self.abci_query_raw(IDENTITY_QUERY_PATH, &identity_id, height, prove)
+            .await
     }
 
     /// Queries a page of an identity's raw event log, starting at sequence `from`.
-    pub fn abci_history(
+    pub async fn abci_history(
         &self,
         identity_id: [u8; 32],
         from: u64,
@@ -286,19 +288,24 @@ impl RpcClient {
         data[40..].copy_from_slice(&limit.to_be_bytes());
 
         self.abci_query_raw(IDENTITY_HISTORY_QUERY_PATH, &data, 0, false)
+            .await
     }
 
-    fn abci_query_raw(
+    async fn abci_query_raw(
         &self,
         path: &str,
         data: &[u8],
         height: u64,
         prove: bool,
     ) -> Result<AbciQueryResponse, RpcError> {
-        self.with_endpoint(|base_url| self.abci_query_raw_from(base_url, path, data, height, prove))
+        self.with_endpoint(async |base_url| {
+            self.abci_query_raw_from(base_url, path, data, height, prove)
+                .await
+        })
+        .await
     }
 
-    fn abci_query_raw_from(
+    async fn abci_query_raw_from(
         &self,
         base_url: &str,
         path: &str,
@@ -318,7 +325,7 @@ impl RpcClient {
             ("prove", prove.to_string()),
         ];
 
-        let raw: Wrapper = self.get_from(base_url, "abci_query", &query)?;
+        let raw: Wrapper = self.get_from(base_url, "abci_query", &query).await?;
         let raw = raw.response;
 
         let value = raw
@@ -351,10 +358,13 @@ impl RpcClient {
     /// Broadcasts a transaction and waits for it to be checked and committed. The response carries
     /// separate codes for check_tx and tx_result because mempool admission and execution are
     /// distinct phases; a transaction can pass one and fail the other.
-    pub fn broadcast_tx_commit(&self, tx: &[u8]) -> Result<BroadcastTxCommitResponse, RpcError> {
+    pub async fn broadcast_tx_commit(
+        &self,
+        tx: &[u8],
+    ) -> Result<BroadcastTxCommitResponse, RpcError> {
         let query = [("tx", format!("0x{}", hex::encode(tx)))];
         let (_url, raw): (String, RawBroadcastTxCommitResponse) =
-            self.get("broadcast_tx_commit", &query)?;
+            self.get("broadcast_tx_commit", &query).await?;
 
         let height = raw
             .height
@@ -374,7 +384,7 @@ impl RpcClient {
         })
     }
 
-    fn signed_header_from(
+    async fn signed_header_from(
         &self,
         base_url: &str,
         height: Option<u64>,
@@ -383,20 +393,20 @@ impl RpcClient {
             Some(height) => {
                 let query = [("height", height.to_string())];
 
-                self.get_from(base_url, "commit", &query)?
+                self.get_from(base_url, "commit", &query).await?
             }
-            None => self.get_from(base_url, "commit", &[])?,
+            None => self.get_from(base_url, "commit", &[]).await?,
         };
 
         Ok(response.signed_header)
     }
 
-    pub(crate) fn identity_state_at_latest_verifiable_height(
+    pub(crate) async fn identity_state_at_latest_verifiable_height(
         &self,
         identity_id: [u8; 32],
     ) -> Result<(SignedHeader, AbciQueryResponse), RpcError> {
-        self.with_endpoint(|base_url| {
-            let signed_header = self.signed_header_from(base_url, None)?;
+        self.with_endpoint(async |base_url| {
+            let signed_header = self.signed_header_from(base_url, None).await?;
             let header_height = signed_header.header.height.value();
 
             let state_height = header_height
@@ -404,13 +414,15 @@ impl RpcClient {
                 .filter(|height| *height > 0)
                 .ok_or(RpcError::NoVerifiableApplicationHeight)?;
 
-            let response = self.abci_query_raw_from(
-                base_url,
-                IDENTITY_QUERY_PATH,
-                &identity_id,
-                state_height,
-                true,
-            )?;
+            let response = self
+                .abci_query_raw_from(
+                    base_url,
+                    IDENTITY_QUERY_PATH,
+                    &identity_id,
+                    state_height,
+                    true,
+                )
+                .await?;
 
             if response.height != state_height {
                 return Err(RpcError::UnexpectedQueryHeight {
@@ -421,14 +433,15 @@ impl RpcClient {
 
             Ok((signed_header, response))
         })
+        .await
     }
 }
 
-fn rpc_agent() -> Agent {
-    Agent::config_builder()
-        .timeout_global(Some(REQUEST_TIMEOUT))
+fn http_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .timeout(REQUEST_TIMEOUT)
         .build()
-        .into()
+        .expect("reqwest client configuration is valid")
 }
 
 #[cfg(test)]
@@ -490,16 +503,19 @@ mod tests {
         assert!(client.is_ok());
     }
 
-    #[test]
-    fn latest_verifiable_state_rejects_a_header_at_height_one() -> Result<()> {
-        let mut server = Server::new();
+    #[tokio::test]
+    async fn latest_verifiable_state_rejects_a_header_at_height_one() -> Result<()> {
+        let mut server = Server::new_async().await;
         let commit = server
             .mock("GET", "/commit")
             .with_body(commit_response(1)?)
-            .create();
+            .create_async()
+            .await;
         let client = RpcClient::new(server.url());
 
-        let result = client.identity_state_at_latest_verifiable_height([0; 32]);
+        let result = client
+            .identity_state_at_latest_verifiable_height([0; 32])
+            .await;
 
         match result {
             Err(RpcError::NoVerifiableApplicationHeight) => {}
@@ -507,27 +523,31 @@ mod tests {
             Ok(_) => anyhow::bail!("height-one header unexpectedly produced a query result"),
         }
 
-        commit.assert();
+        commit.assert_async().await;
 
         Ok(())
     }
 
-    #[test]
-    fn latest_verifiable_state_rejects_a_different_query_height() -> Result<()> {
+    #[tokio::test]
+    async fn latest_verifiable_state_rejects_a_different_query_height() -> Result<()> {
         let header_height = 10;
-        let mut server = Server::new();
+        let mut server = Server::new_async().await;
         let commit = server
             .mock("GET", "/commit")
             .with_body(commit_response(header_height)?)
-            .create();
+            .create_async()
+            .await;
         let query = server
             .mock("GET", "/abci_query")
             .match_query(Matcher::UrlEncoded("height".into(), "9".into()))
             .with_body(query_response(header_height))
-            .create();
+            .create_async()
+            .await;
         let client = RpcClient::new(server.url());
 
-        let result = client.identity_state_at_latest_verifiable_height([0; 32]);
+        let result = client
+            .identity_state_at_latest_verifiable_height([0; 32])
+            .await;
 
         assert!(matches!(
             result,
@@ -536,34 +556,37 @@ mod tests {
                 actual: 10
             })
         ));
-        commit.assert();
-        query.assert();
+        commit.assert_async().await;
+        query.assert_async().await;
 
         Ok(())
     }
 
-    #[test]
-    fn latest_verifiable_state_fetches_header_and_proof_from_one_endpoint() -> Result<()> {
+    #[tokio::test]
+    async fn latest_verifiable_state_fetches_header_and_proof_from_one_endpoint() -> Result<()> {
         let header_height = 10;
-        let mut server = Server::new();
+        let mut server = Server::new_async().await;
         let commit = server
             .mock("GET", "/commit")
             .with_body(commit_response(header_height)?)
-            .create();
+            .create_async()
+            .await;
         let query = server
             .mock("GET", "/abci_query")
             .match_query(Matcher::UrlEncoded("height".into(), "9".into()))
             .with_body(query_response(header_height - 1))
-            .create();
+            .create_async()
+            .await;
         let client = RpcClient::new(server.url());
 
-        let (signed_header, response) =
-            client.identity_state_at_latest_verifiable_height([0; 32])?;
+        let (signed_header, response) = client
+            .identity_state_at_latest_verifiable_height([0; 32])
+            .await?;
 
         assert_eq!(signed_header.header.height.value(), header_height);
         assert_eq!(response.height, header_height - 1);
-        commit.assert();
-        query.assert();
+        commit.assert_async().await;
+        query.assert_async().await;
 
         Ok(())
     }

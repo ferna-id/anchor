@@ -19,6 +19,7 @@ ed25519-dalek = { version = "3.0.0", features = ["rand_core"] }
 owo-colors = { version = "4.0.0", features = ["supports-colors"] }
 rand = "0.10.2"
 thiserror = "2.0.20"
+tokio = { version = "1", features = ["macros", "rt"] }
 
 [dev-dependencies]
 assert_cmd = "2.2.2"

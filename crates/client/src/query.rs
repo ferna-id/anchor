@@ -15,14 +15,15 @@ pub struct QueryResult {
 /// Queries an identity's state at the latest verifiable height, verifying the signed header and
 /// Merkle proof. The queried height trails the signed header by one block, since a header's
 /// app_hash commits to the state after the *previous* block.
-pub fn query(
+pub async fn query(
     client: &RpcClient,
     trusted: &TrustedChain,
     policy: &VerificationPolicy,
     id: IdentityId,
 ) -> Result<QueryResult, ClientError> {
-    let (signed_header, response) =
-        client.identity_state_at_latest_verifiable_height(id.to_bytes())?;
+    let (signed_header, response) = client
+        .identity_state_at_latest_verifiable_height(id.to_bytes())
+        .await?;
 
     let app_hash = verify_signed_header(trusted, policy, &signed_header, tendermint::Time::now())?;
     let app_hash_length = app_hash.as_bytes().len();
@@ -60,11 +61,11 @@ pub fn query(
     })
 }
 
-pub(crate) fn fetch_state_unverified(
+pub(crate) async fn fetch_state_unverified(
     client: &RpcClient,
     id: IdentityId,
 ) -> Result<Option<IdentityState>, ClientError> {
-    let response = client.abci_query(id.to_bytes(), 0, false)?;
+    let response = client.abci_query(id.to_bytes(), 0, false).await?;
 
     if response.code != 0 {
         return Err(ClientError::QueryFailed(response.log));

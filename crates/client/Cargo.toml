@@ -13,12 +13,12 @@ base64 = "0.23.1"
 ed25519-dalek = "3.0.0"
 jmt = "0.12.0"
 rand = "0.10.2"
+reqwest = { version = "0.13.4", default-features = false, features = ["query", "rustls"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 tendermint = { version = "0.40.4", features = ["rust-crypto"] }
 tendermint-light-client-verifier = { version = "0.40.4", features = ["rust-crypto"] }
 thiserror = "2.0.20"
-ureq = { version = "3.4.0", default-features = false, features = ["json"] }
 
 [dev-dependencies]
 anchor-commitment = { path = "../commitment" }
@@ -26,3 +26,4 @@ anchor-testing = { path = "../testing" }
 anyhow = "1.0.104"
 jmt = { version = "0.12.0", features = ["mocks"] }
 mockito = "1.7.2"
+tokio = { version = "1", features = ["macros", "rt"] }

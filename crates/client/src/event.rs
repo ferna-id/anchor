@@ -53,7 +53,7 @@ pub fn prepare_inception(
 }
 
 /// Signs, broadcasts, and confirms an inception, returning the new identity's ID and commit height.
-pub fn finish_inception(
+pub async fn finish_inception(
     client: &RpcClient,
     trusted: &TrustedChain,
     policy: &VerificationPolicy,
@@ -66,7 +66,7 @@ pub fn finish_inception(
     let inception = SignedInception::new(request.configuration, signatures)?;
     let tx = encode(&SignedIdentityEvent::inception(inception))?;
 
-    let height = broadcast(client, trusted, policy, &tx, Submission::Inception(id))?;
+    let height = broadcast(client, trusted, policy, &tx, Submission::Inception(id)).await?;
 
     Ok((id, height))
 }
@@ -100,7 +100,7 @@ impl EventRequest {
 }
 
 /// Fetches an identity's current state and builds a control-rotation event ready for signing.
-pub fn prepare_rotate_control(
+pub async fn prepare_rotate_control(
     client: &RpcClient,
     id: IdentityId,
     reveal_keys: &[PublicKey],
@@ -108,7 +108,9 @@ pub fn prepare_rotate_control(
     next_keys: &[PublicKey],
     next_threshold: Option<u16>,
 ) -> Result<EventRequest, ClientError> {
-    let state = fetch_state_unverified(client, id)?.ok_or(ClientError::UnknownIdentity(id))?;
+    let state = fetch_state_unverified(client, id)
+        .await?
+        .ok_or(ClientError::UnknownIdentity(id))?;
 
     let reveal = build_keyset(reveal_threshold, reveal_keys.to_vec())?;
     let next = build_keyset(next_threshold, next_keys.to_vec())?;
@@ -119,32 +121,41 @@ pub fn prepare_rotate_control(
 }
 
 /// Fetches an identity's current state and builds a device-authorization event ready for signing.
-pub fn prepare_authorize_device(
+pub async fn prepare_authorize_device(
     client: &RpcClient,
     id: IdentityId,
     device_key: PublicKey,
 ) -> Result<EventRequest, ClientError> {
-    let state = fetch_state_unverified(client, id)?.ok_or(ClientError::UnknownIdentity(id))?;
+    let state = fetch_state_unverified(client, id)
+        .await?
+        .ok_or(ClientError::UnknownIdentity(id))?;
     let action = IdentityAction::authorize_device(AuthorizeDevice::new(device_key));
 
     prepare_event(state, id, action)
 }
 
 /// Fetches an identity's current state and builds a device-revocation event ready for signing.
-pub fn prepare_revoke_device(
+pub async fn prepare_revoke_device(
     client: &RpcClient,
     id: IdentityId,
     device_id: DeviceId,
 ) -> Result<EventRequest, ClientError> {
-    let state = fetch_state_unverified(client, id)?.ok_or(ClientError::UnknownIdentity(id))?;
+    let state = fetch_state_unverified(client, id)
+        .await?
+        .ok_or(ClientError::UnknownIdentity(id))?;
     let action = IdentityAction::revoke_device(RevokeDevice::new(device_id));
 
     prepare_event(state, id, action)
 }
 
 /// Fetches an identity's current state and builds a deactivation event ready for signing.
-pub fn prepare_deactivate(client: &RpcClient, id: IdentityId) -> Result<EventRequest, ClientError> {
-    let state = fetch_state_unverified(client, id)?.ok_or(ClientError::UnknownIdentity(id))?;
+pub async fn prepare_deactivate(
+    client: &RpcClient,
+    id: IdentityId,
+) -> Result<EventRequest, ClientError> {
+    let state = fetch_state_unverified(client, id)
+        .await?
+        .ok_or(ClientError::UnknownIdentity(id))?;
 
     prepare_event(state, id, IdentityAction::deactivate())
 }
@@ -174,7 +185,7 @@ fn prepare_event(
 }
 
 /// Signs, broadcasts, and confirms an ordinary event, returning its commit height.
-pub fn finish_event(
+pub async fn finish_event(
     client: &RpcClient,
     trusted: &TrustedChain,
     policy: &VerificationPolicy,
@@ -196,10 +207,11 @@ pub fn finish_event(
         &tx,
         Submission::Event { id, expected_event },
     )
+    .await
 }
 
 /// Creates a new identity, signing with `signers` and submitting it in one call.
-pub fn inception(
+pub async fn inception(
     client: &RpcClient,
     trusted: &TrustedChain,
     policy: &VerificationPolicy,
@@ -217,12 +229,12 @@ pub fn inception(
         .map(|(index, signer)| sign(index as u16, signer, request.signing_target()))
         .collect();
 
-    finish_inception(client, trusted, policy, request, signatures)
+    finish_inception(client, trusted, policy, request, signatures).await
 }
 
 /// Rotates an identity's control keys, signing with `signers` and submitting it in one call.
 #[allow(clippy::too_many_arguments)]
-pub fn rotate_control(
+pub async fn rotate_control(
     client: &RpcClient,
     trusted: &TrustedChain,
     policy: &VerificationPolicy,
@@ -240,15 +252,16 @@ pub fn rotate_control(
         reveal_threshold,
         next_keys,
         next_threshold,
-    )?;
+    )
+    .await?;
 
     let signatures = sign_request(&request, signers)?;
 
-    finish_event(client, trusted, policy, request, signatures)
+    finish_event(client, trusted, policy, request, signatures).await
 }
 
 /// Authorizes a device, signing with `signers` and submitting it in one call.
-pub fn authorize_device(
+pub async fn authorize_device(
     client: &RpcClient,
     trusted: &TrustedChain,
     policy: &VerificationPolicy,
@@ -256,14 +269,14 @@ pub fn authorize_device(
     signers: &[SigningKey],
     device_key: PublicKey,
 ) -> Result<u64, ClientError> {
-    let request = prepare_authorize_device(client, id, device_key)?;
+    let request = prepare_authorize_device(client, id, device_key).await?;
     let signatures = sign_request(&request, signers)?;
 
-    finish_event(client, trusted, policy, request, signatures)
+    finish_event(client, trusted, policy, request, signatures).await
 }
 
 /// Revokes a device, signing with `signers` and submitting it in one call.
-pub fn revoke_device(
+pub async fn revoke_device(
     client: &RpcClient,
     trusted: &TrustedChain,
     policy: &VerificationPolicy,
@@ -271,24 +284,24 @@ pub fn revoke_device(
     signers: &[SigningKey],
     device_id: DeviceId,
 ) -> Result<u64, ClientError> {
-    let request = prepare_revoke_device(client, id, device_id)?;
+    let request = prepare_revoke_device(client, id, device_id).await?;
     let signatures = sign_request(&request, signers)?;
 
-    finish_event(client, trusted, policy, request, signatures)
+    finish_event(client, trusted, policy, request, signatures).await
 }
 
 /// Deactivates an identity, signing with `signers` and submitting it in one call.
-pub fn deactivate(
+pub async fn deactivate(
     client: &RpcClient,
     trusted: &TrustedChain,
     policy: &VerificationPolicy,
     id: IdentityId,
     signers: &[SigningKey],
 ) -> Result<u64, ClientError> {
-    let request = prepare_deactivate(client, id)?;
+    let request = prepare_deactivate(client, id).await?;
     let signatures = sign_request(&request, signers)?;
 
-    finish_event(client, trusted, policy, request, signatures)
+    finish_event(client, trusted, policy, request, signatures).await
 }
 
 fn sign_request(
@@ -325,14 +338,14 @@ impl Submission {
     }
 }
 
-fn broadcast(
+async fn broadcast(
     client: &RpcClient,
     trusted: &TrustedChain,
     policy: &VerificationPolicy,
     tx: &[u8],
     submission: Submission,
 ) -> Result<u64, ClientError> {
-    let response = client.broadcast_tx_commit(tx)?;
+    let response = client.broadcast_tx_commit(tx).await?;
 
     if response.check_tx.code != 0 {
         return recover_or_reject(
@@ -342,7 +355,8 @@ fn broadcast(
             submission,
             "check_tx",
             response.check_tx.log,
-        );
+        )
+        .await;
     }
 
     if response.tx_result.code != 0 {
@@ -353,13 +367,14 @@ fn broadcast(
             submission,
             "finalize_block",
             response.tx_result.log,
-        );
+        )
+        .await;
     }
 
     Ok(response.height)
 }
 
-fn recover_or_reject(
+async fn recover_or_reject(
     client: &RpcClient,
     trusted: &TrustedChain,
     policy: &VerificationPolicy,
@@ -367,7 +382,8 @@ fn recover_or_reject(
     stage: &'static str,
     log: String,
 ) -> Result<u64, ClientError> {
-    let QueryResult { height, state } = query(client, trusted, policy, submission.identity_id())?;
+    let QueryResult { height, state } =
+        query(client, trusted, policy, submission.identity_id()).await?;
 
     if already_applied(&submission, state.as_ref()) {
         return Ok(height);
@@ -549,27 +565,30 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn finish_inception_propagates_a_genuine_rejection() -> Result<()> {
+    #[tokio::test]
+    async fn finish_inception_propagates_a_genuine_rejection() -> Result<()> {
         let signer = signing_key(0x11);
         let (request, signature, id) = inception_request_and_id(&signer)?;
 
-        let mut server = Server::new();
+        let mut server = Server::new_async().await;
         let broadcast = server
             .mock("GET", "/broadcast_tx_commit")
             .match_query(Matcher::Any)
             .with_body(rejected_broadcast_response("invalid signature"))
-            .create();
+            .create_async()
+            .await;
         let commit = server
             .mock("GET", "/commit")
             .match_query(Matcher::Any)
             .with_body(commit_response()?)
-            .create();
+            .create_async()
+            .await;
         let query = server
             .mock("GET", "/abci_query")
             .match_query(Matcher::Any)
             .with_body(nonexistent_query_response(id, header_height()? - 1)?)
-            .create();
+            .create_async()
+            .await;
         let client = RpcClient::new(server.url());
 
         let result = finish_inception(
@@ -578,7 +597,8 @@ mod tests {
             &permissive_policy(),
             request,
             vec![signature],
-        );
+        )
+        .await;
 
         assert!(matches!(
             result,
@@ -587,15 +607,15 @@ mod tests {
                 ..
             })
         ));
-        broadcast.assert();
-        commit.assert();
-        query.assert();
+        broadcast.assert_async().await;
+        commit.assert_async().await;
+        query.assert_async().await;
 
         Ok(())
     }
 
-    #[test]
-    fn finish_event_propagates_a_genuine_rejection() -> Result<()> {
+    #[tokio::test]
+    async fn finish_event_propagates_a_genuine_rejection() -> Result<()> {
         let signer = signing_key(0x11);
         let (request, signature, id) = inception_request_and_id(&signer)?;
         let inception = SignedInception::new(request.configuration().clone(), vec![signature])?;
@@ -606,22 +626,25 @@ mod tests {
         let event_request = prepare_event(state, id, action)?;
         let event_signature = sign(0, &signer, event_request.signing_target());
 
-        let mut server = Server::new();
+        let mut server = Server::new_async().await;
         let broadcast = server
             .mock("GET", "/broadcast_tx_commit")
             .match_query(Matcher::Any)
             .with_body(rejected_broadcast_response("invalid signature"))
-            .create();
+            .create_async()
+            .await;
         let commit = server
             .mock("GET", "/commit")
             .match_query(Matcher::Any)
             .with_body(commit_response()?)
-            .create();
+            .create_async()
+            .await;
         let query = server
             .mock("GET", "/abci_query")
             .match_query(Matcher::Any)
             .with_body(nonexistent_query_response(id, header_height()? - 1)?)
-            .create();
+            .create_async()
+            .await;
         let client = RpcClient::new(server.url());
 
         let result = finish_event(
@@ -630,7 +653,8 @@ mod tests {
             &permissive_policy(),
             event_request,
             vec![event_signature],
-        );
+        )
+        .await;
 
         assert!(matches!(
             result,
@@ -639,9 +663,9 @@ mod tests {
                 ..
             })
         ));
-        broadcast.assert();
-        commit.assert();
-        query.assert();
+        broadcast.assert_async().await;
+        commit.assert_async().await;
+        query.assert_async().await;
 
         Ok(())
     }

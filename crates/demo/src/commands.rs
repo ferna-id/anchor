@@ -31,7 +31,7 @@ pub fn pubkey(path: &Path) -> Result<(), CliError> {
 }
 
 /// Creates a new identity and prints its ID and DID.
-pub fn inception(
+pub async fn inception(
     node: &str,
     genesis_path: &Path,
     policy: &VerificationPolicy,
@@ -56,7 +56,8 @@ pub fn inception(
         threshold,
         &next_keys,
         next_threshold,
-    )?;
+    )
+    .await?;
 
     output::success(&format!("committed at height {height}"));
     output::field("identity id", &hex::encode(&id.to_bytes()));
@@ -66,7 +67,7 @@ pub fn inception(
 }
 
 /// Queries and prints an identity's verified current state.
-pub fn query(
+pub async fn query(
     node: &str,
     genesis_path: &Path,
     policy: &VerificationPolicy,
@@ -76,7 +77,7 @@ pub fn query(
     let client = RpcClient::new(node);
     let trusted = load_trusted_chain(genesis_path)?;
 
-    let QueryResult { height, state } = anchor_client::query(&client, &trusted, policy, id)?;
+    let QueryResult { height, state } = anchor_client::query(&client, &trusted, policy, id).await?;
 
     output::header(&format!("identity {}", hex::encode(&id.to_bytes())));
     output::field("did", &anchor_did::to_did(&id).to_string());
@@ -122,7 +123,7 @@ pub fn query(
 }
 
 /// Fetches and prints an identity's verified event history.
-pub fn history(
+pub async fn history(
     node: &str,
     genesis_path: &Path,
     policy: &VerificationPolicy,
@@ -135,7 +136,7 @@ pub fn history(
         height,
         state: _,
         events,
-    } = anchor_client::history(&client, &trusted, policy, id)?;
+    } = anchor_client::history(&client, &trusted, policy, id).await?;
 
     output::header(&format!("identity {} history", hex::encode(&id.to_bytes())));
     output::field("verified at height", &height.to_string());
@@ -155,7 +156,7 @@ pub fn history(
 }
 
 /// Resolves a `did:ferna` identifier and prints its DID Document.
-pub fn resolve(
+pub async fn resolve(
     node: &str,
     genesis_path: &Path,
     policy: &VerificationPolicy,
@@ -163,7 +164,7 @@ pub fn resolve(
 ) -> Result<(), CliError> {
     let client = RpcClient::new(node);
     let trusted = load_trusted_chain(genesis_path)?;
-    let resolution = anchor_did::resolve(&client, &trusted, policy, did)?;
+    let resolution = anchor_did::resolve(&client, &trusted, policy, did).await?;
 
     output::header(&format!("resolved {did}"));
 
@@ -204,7 +205,7 @@ fn event_summary(event: &SignedIdentityEvent) -> (Sequence, &'static str) {
 
 /// Rotates an identity's control keys.
 #[allow(clippy::too_many_arguments)]
-pub fn rotate_control(
+pub async fn rotate_control(
     node: &str,
     genesis_path: &Path,
     policy: &VerificationPolicy,
@@ -238,7 +239,8 @@ pub fn rotate_control(
         reveal_threshold,
         &next_keys,
         next_threshold,
-    )?;
+    )
+    .await?;
 
     output::success(&format!("committed at height {height}"));
 
@@ -246,7 +248,7 @@ pub fn rotate_control(
 }
 
 /// Authorizes a new device key for an identity.
-pub fn authorize_device(
+pub async fn authorize_device(
     node: &str,
     genesis_path: &Path,
     policy: &VerificationPolicy,
@@ -261,7 +263,8 @@ pub fn authorize_device(
     let client = RpcClient::new(node);
     let trusted = load_trusted_chain(genesis_path)?;
     let height =
-        anchor_client::authorize_device(&client, &trusted, policy, id, &signers, device_key)?;
+        anchor_client::authorize_device(&client, &trusted, policy, id, &signers, device_key)
+            .await?;
 
     output::success(&format!("committed at height {height}"));
 
@@ -269,7 +272,7 @@ pub fn authorize_device(
 }
 
 /// Revokes an authorized device from an identity.
-pub fn revoke_device(
+pub async fn revoke_device(
     node: &str,
     genesis_path: &Path,
     policy: &VerificationPolicy,
@@ -283,7 +286,8 @@ pub fn revoke_device(
 
     let client = RpcClient::new(node);
     let trusted = load_trusted_chain(genesis_path)?;
-    let height = anchor_client::revoke_device(&client, &trusted, policy, id, &signers, device_id)?;
+    let height =
+        anchor_client::revoke_device(&client, &trusted, policy, id, &signers, device_id).await?;
 
     output::success(&format!("committed at height {height}"));
 
@@ -291,7 +295,7 @@ pub fn revoke_device(
 }
 
 /// Permanently deactivates an identity.
-pub fn deactivate(
+pub async fn deactivate(
     node: &str,
     genesis_path: &Path,
     policy: &VerificationPolicy,
@@ -303,7 +307,7 @@ pub fn deactivate(
 
     let client = RpcClient::new(node);
     let trusted = load_trusted_chain(genesis_path)?;
-    let height = anchor_client::deactivate(&client, &trusted, policy, id, &signers)?;
+    let height = anchor_client::deactivate(&client, &trusted, policy, id, &signers).await?;
 
     output::success(&format!("committed at height {height}"));
 

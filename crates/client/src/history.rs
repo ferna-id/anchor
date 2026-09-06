@@ -16,13 +16,13 @@ pub struct HistoryResult {
 /// Fetches and replays an identity's complete signed event history, verifying it matches the
 /// proven current state. Individual events aren't Merkle-proven on their own; trust comes from
 /// the replay landing exactly on the state `query` already verified.
-pub fn history(
+pub async fn history(
     client: &RpcClient,
     trusted: &TrustedChain,
     policy: &VerificationPolicy,
     id: IdentityId,
 ) -> Result<HistoryResult, ClientError> {
-    let current = query(client, trusted, policy, id)?;
+    let current = query(client, trusted, policy, id).await?;
     let expected = current.state.ok_or(ClientError::UnknownIdentity(id))?;
     let event_count = expected
         .sequence()
@@ -35,7 +35,7 @@ pub fn history(
         let from = events.len() as u64;
         let remaining = event_count - from;
         let limit = remaining.min(u64::from(HISTORY_PAGE_SIZE)) as u32;
-        let response = client.abci_history(id.to_bytes(), from, limit)?;
+        let response = client.abci_history(id.to_bytes(), from, limit).await?;
 
         if response.code != 0 {
             return Err(ClientError::QueryFailed(response.log));

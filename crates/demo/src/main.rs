@@ -119,16 +119,17 @@ impl VerificationArgs {
     }
 }
 
-fn main() {
+#[tokio::main(flavor = "current_thread")]
+async fn main() {
     let cli = Cli::parse();
 
-    if let Err(error) = run(cli) {
+    if let Err(error) = run(cli).await {
         output::error(&error.to_string());
         std::process::exit(1);
     }
 }
 
-fn run(cli: Cli) -> Result<(), CliError> {
+async fn run(cli: Cli) -> Result<(), CliError> {
     match cli.command {
         Command::Keygen { path, force } => commands::keygen(&path, force),
         Command::Pubkey { path } => commands::pubkey(&path),
@@ -149,18 +150,19 @@ fn run(cli: Cli) -> Result<(), CliError> {
                 &next_keys,
                 next_threshold,
             )
+            .await
         }
         Command::Query { id, verification } => {
             let policy = verification.policy();
-            commands::query(&cli.node, &verification.genesis, &policy, &id)
+            commands::query(&cli.node, &verification.genesis, &policy, &id).await
         }
         Command::History { id, verification } => {
             let policy = verification.policy();
-            commands::history(&cli.node, &verification.genesis, &policy, &id)
+            commands::history(&cli.node, &verification.genesis, &policy, &id).await
         }
         Command::Resolve { did, verification } => {
             let policy = verification.policy();
-            commands::resolve(&cli.node, &verification.genesis, &policy, &did)
+            commands::resolve(&cli.node, &verification.genesis, &policy, &did).await
         }
         Command::RotateControl {
             id,
@@ -183,6 +185,7 @@ fn run(cli: Cli) -> Result<(), CliError> {
                 &next_keys,
                 next_threshold,
             )
+            .await
         }
         Command::AuthorizeDevice {
             id,
@@ -199,6 +202,7 @@ fn run(cli: Cli) -> Result<(), CliError> {
                 &keys,
                 &device_key,
             )
+            .await
         }
         Command::RevokeDevice {
             id,
@@ -215,6 +219,7 @@ fn run(cli: Cli) -> Result<(), CliError> {
                 &keys,
                 &device_id,
             )
+            .await
         }
         Command::Deactivate {
             id,
@@ -222,7 +227,7 @@ fn run(cli: Cli) -> Result<(), CliError> {
             verification,
         } => {
             let policy = verification.policy();
-            commands::deactivate(&cli.node, &verification.genesis, &policy, &id, &keys)
+            commands::deactivate(&cli.node, &verification.genesis, &policy, &id, &keys).await
         }
     }
 }

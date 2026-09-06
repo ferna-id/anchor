@@ -24,14 +24,14 @@ pub enum Resolution {
 }
 
 /// Resolves a `did:ferna` identifier to its DID Document, verifying the underlying ledger state.
-pub fn resolve(
+pub async fn resolve(
     client: &RpcClient,
     trusted: &TrustedChain,
     policy: &VerificationPolicy,
     did: &str,
 ) -> Result<Resolution, DidError> {
     let id = parse_did(did)?;
-    let QueryResult { height, state } = query(client, trusted, policy, id)?;
+    let QueryResult { height, state } = query(client, trusted, policy, id).await?;
 
     let Some(state) = state else {
         return Ok(Resolution::NotFound { height });
